@@ -146,3 +146,6 @@ config.json
 *.tmp
 *.temp
 /tmp/
+
+# Session notes (local development notes)
+prompts/session-*
