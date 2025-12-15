@@ -21,10 +21,19 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 # Copy required files to build directory (flat structure at top level)
-cp "$DIST_DIR/manifest.json" "$BUILD_DIR/"
 cp "$DIST_DIR/Install" "$BUILD_DIR/"
 cp "$DIST_DIR/Start" "$BUILD_DIR/"
 cp "$DIST_DIR/status.json" "$BUILD_DIR/"
+
+# Generate manifest.json with current version
+cat > "$BUILD_DIR/manifest.json" << EOF
+{
+  "AppName": "lora_mqtt_bridge",
+  "AppVersion": "$VERSION",
+  "AppDescription": "Bridge MQTT messages from local LoRaWAN gateway to multiple remote MQTT brokers with filtering capabilities",
+  "AppVersionNotes": "Release $VERSION for mLinux 6.3.5 (Python 3.8, paho-mqtt 1.5.x)"
+}
+EOF
 
 # Copy provisioning directory
 cp -r "$DIST_DIR/provisioning" "$BUILD_DIR/"
