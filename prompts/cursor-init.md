@@ -186,6 +186,27 @@ sleep 2
 curl -k -s -b /tmp/cookies.txt -X POST "https://192.168.1.100/api/customApps/1/start" -H "Content-Length: 0"
 ```
 
+### Update Configuration via API
+
+```
+Update app configuration file via API without SSH access
+```
+
+Commands used:
+```bash
+# Upload config file via API
+curl -k -s -b /tmp/cookies.txt -X POST "https://192.168.1.100/api/command/app_config_install" \
+  -F "appId=1" \
+  -F "appConfigFile=@config.json;filename=config.json;type=application/json"
+
+# Restart app to apply new config
+curl -k -s -b /tmp/cookies.txt -X POST "https://192.168.1.100/api/customApps/1/stop" -H "Content-Length: 0"
+sleep 2
+curl -k -s -b /tmp/cookies.txt -X POST "https://192.168.1.100/api/customApps/1/start" -H "Content-Length: 0"
+```
+
+**Note**: The config file is uploaded to the app's config directory. The filename in the form determines the target filename. Use `config.json` for the main configuration file.
+
 ### Check Application Status and Logs
 
 ```
