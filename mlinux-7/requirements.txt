@@ -1,0 +1,9 @@
+# LoRa MQTT Bridge Dependencies for mLinux 7.1.0
+# All packages available in mLinux opkg feeds
+
+# Core MQTT library (available as python3-paho-mqtt in mLinux)
+paho-mqtt>=1.6.0,<2.0.0
+
+# Development/Testing dependencies (install via pip if needed)
+# pytest>=7.0.0
+# pytest-mock>=3.0.0

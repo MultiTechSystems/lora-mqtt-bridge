@@ -1,0 +1,6 @@
+{
+  "AppName": "lora_mqtt_bridge",
+  "AppVersion": "1.0.0",
+  "AppDescription": "Bridge MQTT messages from local LoRaWAN gateway to multiple remote MQTT brokers with filtering capabilities",
+  "AppVersionNotes": "Initial release for mLinux 6.3.5 (Python 3.8, paho-mqtt 1.6.x)"
+}

@@ -1,0 +1,9 @@
+{
+  "pkgs": [
+    {
+      "FileName": "python3-paho-mqtt_1.6.1-r0.0_cortexa7t2hf-neon.ipk",
+      "PkgName": "python3-paho-mqtt",
+      "type": "ipk"
+    }
+  ]
+}

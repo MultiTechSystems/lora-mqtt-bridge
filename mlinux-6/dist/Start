@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# Start script for LoRa MQTT Bridge custom application
+# This script is used by app-manager to start and stop the application
+
+NAME="lora_mqtt_bridge"
+DESC="LoRa MQTT Bridge"
+DAEMON="$APP_DIR/lora_mqtt_bridge/main.py"
+PID="/var/run/lora_mqtt_bridge.pid"
+CONFIG_FILE="/etc/lora-mqtt-bridge/config.json"
+LOG_FILE="/var/log/lora-mqtt-bridge.log"
+
+function SetEnv {
+    echo "SetEnv"
+    
+    # Set PYTHONPATH to include our application
+    export PYTHONPATH="$APP_DIR:$PYTHONPATH"
+    
+    echo "CONFIG_DIR: $CONFIG_DIR"
+    logger -t Start "CONFIG_DIR: $CONFIG_DIR"
+    echo "APP_DIR: $APP_DIR"
+    logger -t Start "APP_DIR: $APP_DIR"
+    echo "APP_ID: $APP_ID"
+    logger -t Start "APP_ID: $APP_ID"
+}
+
+function CreateAccess {
+    echo "CreateAccess:"
+    # Create log directory if needed
+    mkdir -p /var/log
+    # Create config directory if needed
+    mkdir -p /etc/lora-mqtt-bridge
+}
+
+function ChangeUser {
+    echo "ChangeUser:"
+    # Run as root for now
+}
+
+function Execute {
+    echo "Execute:"
+    
+    # Determine config file location
+    if [ -f "$CONFIG_DIR/config.json" ]; then
+        CONFIG_ARG="-c $CONFIG_DIR/config.json"
+    elif [ -f "$CONFIG_FILE" ]; then
+        CONFIG_ARG="-c $CONFIG_FILE"
+    elif [ -f "$APP_DIR/config/config.json" ]; then
+        CONFIG_ARG="-c $APP_DIR/config/config.json"
+    else
+        # Use environment variables if no config file found
+        CONFIG_ARG="--env"
+    fi
+    
+    # Start the application using Python module invocation
+    /usr/sbin/start-stop-daemon --start --background \
+        --pidfile "$PID" --make-pidfile \
+        --startas /bin/bash -- -c "cd $APP_DIR && exec python3 -m lora_mqtt_bridge $CONFIG_ARG --log-file $LOG_FILE >> $LOG_FILE 2>&1"
+    
+    logger -t Start "LoRa MQTT Bridge started with config: $CONFIG_ARG"
+}
+
+function Restart {
+    echo "Restart:"
+    Stop
+    sleep 2
+    Start
+}
+
+function Stop {
+    echo "Stop:"
+    /usr/sbin/start-stop-daemon --stop -p "$PID" --retry 60
+    rm -f "$PID"
+    logger -t Start "LoRa MQTT Bridge stopped"
+}
+
+function Start {
+    SetEnv
+    CreateAccess
+    ChangeUser
+    Execute
+}
+
+# Notify the application process that new config files are available
+function Reload {
+    echo "Reload:"
+    # Restart to pick up new configuration
+    Restart
+}
+
+case "$1" in
+    start)
+        echo -n "Starting $DESC: "
+        Start
+        echo "$NAME."
+        ;;
+    stop)
+        echo -n "Stopping $DESC: "
+        Stop
+        echo "$NAME."
+        ;;
+    restart)
+        echo -n "Restarting $DESC: "
+        Restart
+        echo "$NAME."
+        ;;
+    reload)
+        echo -n "Reloading $DESC: "
+        Reload
+        echo "$NAME."
+        ;;
+    *)
+        N=$NAME
+        echo "Usage: $N {start|stop|restart|reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,67 @@
+{
+  "local_broker": {
+    "host": "127.0.0.1",
+    "port": 1883,
+    "topics": {
+      "format": "lora",
+      "uplink_pattern": "lora/+/+/up",
+      "downlink_pattern": "lora/%s/down"
+    }
+  },
+  "remote_brokers": [
+    {
+      "name": "app-server-1",
+      "enabled": true,
+      "host": "app1.example.com",
+      "port": 8883,
+      "username": "app1-user",
+      "password": "app1-pass",
+      "tls": {
+        "enabled": true
+      },
+      "message_filter": {
+        "appeui_whitelist": ["aa-bb-cc-dd-ee-ff-00-11"],
+        "deveui_blacklist": ["ff-ff-ff-ff-ff-ff-ff-ff"]
+      },
+      "field_filter": {
+        "exclude_fields": ["rssi", "snr", "freq", "dr"]
+      }
+    },
+    {
+      "name": "app-server-2",
+      "enabled": true,
+      "host": "app2.example.com",
+      "port": 8883,
+      "username": "app2-user",
+      "password": "app2-pass",
+      "tls": {
+        "enabled": true
+      },
+      "message_filter": {
+        "appeui_whitelist": ["11-22-33-44-55-66-77-88"]
+      }
+    },
+    {
+      "name": "monitoring",
+      "enabled": true,
+      "host": "monitoring.example.com",
+      "port": 1883,
+      "tls": {
+        "enabled": false
+      },
+      "message_filter": {
+        "deveui_whitelist": [
+          "00-11-22-33-44-55-66-01",
+          "00-11-22-33-44-55-66-02",
+          "00-11-22-33-44-55-66-03"
+        ]
+      },
+      "field_filter": {
+        "include_fields": ["deveui", "time", "rssi", "snr", "gweui"]
+      }
+    }
+  ],
+  "log": {
+    "level": "DEBUG"
+  }
+}

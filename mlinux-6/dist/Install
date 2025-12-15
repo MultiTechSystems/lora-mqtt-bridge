@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Install script for LoRa MQTT Bridge custom application
+# This script handles installation and removal of dependencies
+
+OPKG_CMD_PREFIX="opkg install --force-depends ./provisioning/"
+OPKG_CMD_PREFIX_R="opkg remove --force-depends "
+MANIFEST="./provisioning/p_manifest.json"
+NAME="Install"
+
+# Install required Python packages from mLinux feeds
+function install_packages {
+    logger -t Install "Installing LoRa MQTT Bridge dependencies"
+    
+    # Ensure opkg feeds are updated
+    opkg update 2>/dev/null || true
+    
+    # Install core Python packages if not already present
+    opkg install python3-core python3-json python3-logging python3-threading 2>/dev/null || true
+    
+    # Install paho-mqtt from feeds
+    opkg install python3-paho-mqtt
+    if [ $? != 0 ]; then
+        echo "Failed to install python3-paho-mqtt from feeds"
+        logger -t Install "Failed to install python3-paho-mqtt from feeds"
+        
+        # Try from local provisioning directory
+        if [ -f "$MANIFEST" ]; then
+            JSONTXT=$(<./provisioning/p_manifest.json)
+            PKGCNT=$(echo $JSONTXT | jsparser --count -p /pkgs 2>/dev/null)
+            
+            if [ -n "$PKGCNT" ] && [ "$PKGCNT" -gt 0 ]; then
+                for ((i=0; i < PKGCNT; i++)); do
+                    PKG=$(echo $JSONTXT | jsparser --jsobj -p /pkgs/$i 2>/dev/null)
+                    PKGNM=$(echo $PKG | jsparser -p /FileName 2>/dev/null)
+                    PKGTYPE=$(echo $PKG | jsparser -p /type 2>/dev/null)
+                    
+                    if [ "$PKGTYPE" == "ipk" ] && [ -f "./provisioning/$PKGNM" ]; then
+                        PKGCMD=$OPKG_CMD_PREFIX$PKGNM
+                        echo "Executing: $PKGCMD"
+                        eval $PKGCMD
+                        if [ $? != 0 ]; then
+                            echo "Command [$PKGCMD] failed with status $?"
+                            logger -t Install "Command [$PKGCMD] failed with status $?"
+                            exit $?
+                        fi
+                        logger -t Install "Command [$PKGCMD] succeeded"
+                    fi
+                done
+            fi
+        fi
+    fi
+    
+    # Create config directory
+    mkdir -p /etc/lora-mqtt-bridge
+    
+    # Copy default config if not exists
+    if [ ! -f /etc/lora-mqtt-bridge/config.json ]; then
+        if [ -f ./config/config.json ]; then
+            cp ./config/config.json /etc/lora-mqtt-bridge/config.json
+        fi
+    fi
+    
+    logger -t Install "LoRa MQTT Bridge dependencies installed successfully"
+}
+
+function post_install {
+    echo "post_install"
+    logger -t Install "LoRa MQTT Bridge post-install completed"
+}
+
+function remove_packages {
+    logger -t Install "Removing LoRa MQTT Bridge dependencies"
+    
+    if [ -f "$MANIFEST" ]; then
+        JSONTXT=$(<./provisioning/p_manifest.json)
+        PKGCNT=$(echo $JSONTXT | jsparser --count -p /pkgs 2>/dev/null)
+        
+        if [ -n "$PKGCNT" ] && [ "$PKGCNT" -gt 0 ]; then
+            for ((i=0; i < PKGCNT; i++)); do
+                PKG=$(echo $JSONTXT | jsparser --jsobj -p /pkgs/$i 2>/dev/null)
+                PKGNM=$(echo $PKG | jsparser -p /PkgName 2>/dev/null)
+                PKGTYPE=$(echo $PKG | jsparser -p /type 2>/dev/null)
+                
+                if [ "$PKGTYPE" == "ipk" ]; then
+                    # Don't remove paho-mqtt as other apps might use it
+                    echo "Skipping removal of $PKGNM (shared package)"
+                    logger -t Install "Skipping removal of $PKGNM (shared package)"
+                fi
+            done
+        fi
+    fi
+    
+    logger -t Install "LoRa MQTT Bridge dependencies removal completed"
+}
+
+function post_remove {
+    echo "post_remove"
+    # Note: We don't remove /etc/lora-mqtt-bridge to preserve config
+    logger -t Install "LoRa MQTT Bridge post-remove completed"
+}
+
+case "$1" in
+    install)
+        echo -n "Installing dependencies: "
+        logger -t Install "Installing Dependencies: "
+        install_packages
+        echo "$NAME."
+        ;;
+    remove)
+        echo -n "Removing Dependencies: "
+        logger -t Install "Removing Dependencies: "
+        remove_packages
+        echo "$NAME."
+        ;;
+    postinstall)
+        echo -n "Running app post install "
+        logger -t Install "Running app post install "
+        post_install
+        echo "$NAME."
+        ;;
+    postremove)
+        echo -n "Running app post remove "
+        logger -t Install "Running app post remove "
+        post_remove
+        echo "$NAME."
+        ;;
+    *)
+        N=$NAME
+        echo "Usage: $N {install|remove|postinstall|postremove}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
