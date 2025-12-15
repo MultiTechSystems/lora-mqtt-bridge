@@ -1,15 +1,16 @@
 """Configuration models for the LoRa MQTT Bridge.
 
-This module defines Pydantic models for configuration of the MQTT bridge,
+This module defines configuration classes for the MQTT bridge,
 including local broker settings, remote broker settings, and filtering options.
+
+Compatible with Python 3.10+ without external dependencies (no pydantic).
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
-
-from pydantic import BaseModel, Field, field_validator
 
 
 class TopicFormat(str, Enum):
@@ -19,7 +20,63 @@ class TopicFormat(str, Enum):
     SCADA = "scada"
 
 
-class TopicConfig(BaseModel):
+def _normalize_eui(eui: str) -> str:
+    """Normalize EUI values to lowercase with dashes.
+
+    Args:
+        eui: The EUI string to normalize.
+
+    Returns:
+        The normalized EUI string.
+    """
+    clean = eui.replace(":", "").replace("-", "").lower()
+    if len(clean) == 16:
+        return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
+    return eui.lower()
+
+
+def _normalize_eui_list(eui_list: list[str]) -> list[str]:
+    """Normalize a list of EUI values.
+
+    Args:
+        eui_list: List of EUI strings to normalize.
+
+    Returns:
+        List of normalized EUI strings.
+    """
+    return [_normalize_eui(eui) for eui in eui_list]
+
+
+def _parse_topic_format(value: Any) -> list[TopicFormat]:
+    """Parse source_topic_format from various input types.
+
+    Args:
+        value: A single format or list of formats (strings or TopicFormat).
+
+    Returns:
+        List of TopicFormat values.
+    """
+    if value is None:
+        return [TopicFormat.LORA]
+    if isinstance(value, str):
+        return [TopicFormat(value)]
+    if isinstance(value, TopicFormat):
+        return [value]
+    if isinstance(value, list):
+        result = []
+        for item in value:
+            if isinstance(item, str):
+                result.append(TopicFormat(item))
+            elif isinstance(item, TopicFormat):
+                result.append(item)
+            else:
+                result.append(item)
+        return result
+    return [TopicFormat.LORA]
+
+
+@dataclass
+class TopicConfig:
     """Configuration for MQTT topic formats.
 
     Attributes:
@@ -28,27 +85,9 @@ class TopicConfig(BaseModel):
         downlink_pattern: Pattern for downlink topics with %s for deveui.
     """
 
-    format: TopicFormat = Field(default=TopicFormat.LORA)
-    uplink_pattern: str = Field(default="lora/+/+/up")
-    downlink_pattern: str = Field(default="lora/%s/down")
-
-    @field_validator("uplink_pattern", "downlink_pattern")
-    @classmethod
-    def validate_pattern(cls, v: str) -> str:
-        """Validate that pattern is not empty.
-
-        Args:
-            v: The pattern string to validate.
-
-        Returns:
-            The validated pattern string.
-
-        Raises:
-            ValueError: If the pattern is empty.
-        """
-        if not v or not v.strip():
-            raise ValueError("Pattern cannot be empty")
-        return v
+    format: TopicFormat = TopicFormat.LORA
+    uplink_pattern: str = "lora/+/+/up"
+    downlink_pattern: str = "lora/%s/down"
 
     def get_uplink_pattern(self) -> str:
         """Get the uplink topic pattern based on format.
@@ -70,8 +109,28 @@ class TopicConfig(BaseModel):
             return "scada/%s/down"
         return self.downlink_pattern
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TopicConfig:
+        """Create TopicConfig from a dictionary.
 
-class LocalBrokerConfig(BaseModel):
+        Args:
+            data: Dictionary containing configuration data.
+
+        Returns:
+            A TopicConfig instance.
+        """
+        format_val = data.get("format", "lora")
+        if isinstance(format_val, str):
+            format_val = TopicFormat(format_val)
+        return cls(
+            format=format_val,
+            uplink_pattern=data.get("uplink_pattern", "lora/+/+/up"),
+            downlink_pattern=data.get("downlink_pattern", "lora/%s/down"),
+        )
+
+
+@dataclass
+class LocalBrokerConfig:
     """Configuration for the local MQTT broker connection.
 
     Attributes:
@@ -84,16 +143,39 @@ class LocalBrokerConfig(BaseModel):
         keepalive: The keepalive interval in seconds.
     """
 
-    host: str = Field(default="127.0.0.1")
-    port: int = Field(default=1883, ge=1, le=65535)
-    username: str | None = Field(default=None)
-    password: str | None = Field(default=None)
-    client_id: str = Field(default="lora-mqtt-bridge-local")
-    topics: TopicConfig = Field(default_factory=TopicConfig)
-    keepalive: int = Field(default=60, ge=10, le=3600)
+    host: str = "127.0.0.1"
+    port: int = 1883
+    username: str | None = None
+    password: str | None = None
+    client_id: str = "lora-mqtt-bridge-local"
+    topics: TopicConfig = field(default_factory=TopicConfig)
+    keepalive: int = 60
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> LocalBrokerConfig:
+        """Create LocalBrokerConfig from a dictionary.
+
+        Args:
+            data: Dictionary containing configuration data.
+
+        Returns:
+            A LocalBrokerConfig instance.
+        """
+        topics_data = data.get("topics", {})
+        topics = TopicConfig.from_dict(topics_data) if topics_data else TopicConfig()
+        return cls(
+            host=data.get("host", "127.0.0.1"),
+            port=data.get("port", 1883),
+            username=data.get("username"),
+            password=data.get("password"),
+            client_id=data.get("client_id", "lora-mqtt-bridge-local"),
+            topics=topics,
+            keepalive=data.get("keepalive", 60),
+        )
 
 
-class MessageFilterConfig(BaseModel):
+@dataclass
+class MessageFilterConfig:
     """Configuration for filtering messages by device identifiers.
 
     Attributes:
@@ -105,44 +187,35 @@ class MessageFilterConfig(BaseModel):
         appeui_blacklist: List of AppEUI values to block.
     """
 
-    deveui_whitelist: list[str] = Field(default_factory=list)
-    deveui_blacklist: list[str] = Field(default_factory=list)
-    joineui_whitelist: list[str] = Field(default_factory=list)
-    joineui_blacklist: list[str] = Field(default_factory=list)
-    appeui_whitelist: list[str] = Field(default_factory=list)
-    appeui_blacklist: list[str] = Field(default_factory=list)
+    deveui_whitelist: list[str] = field(default_factory=list)
+    deveui_blacklist: list[str] = field(default_factory=list)
+    joineui_whitelist: list[str] = field(default_factory=list)
+    joineui_blacklist: list[str] = field(default_factory=list)
+    appeui_whitelist: list[str] = field(default_factory=list)
+    appeui_blacklist: list[str] = field(default_factory=list)
 
-    @field_validator(
-        "deveui_whitelist",
-        "deveui_blacklist",
-        "joineui_whitelist",
-        "joineui_blacklist",
-        "appeui_whitelist",
-        "appeui_blacklist",
-    )
     @classmethod
-    def normalize_eui_list(cls, v: list[str]) -> list[str]:
-        """Normalize EUI values to lowercase with dashes.
+    def from_dict(cls, data: dict[str, Any]) -> MessageFilterConfig:
+        """Create MessageFilterConfig from a dictionary.
 
         Args:
-            v: List of EUI strings to normalize.
+            data: Dictionary containing configuration data.
 
         Returns:
-            List of normalized EUI strings.
+            A MessageFilterConfig instance.
         """
-        normalized = []
-        for eui in v:
-            # Remove colons and convert to lowercase with dashes
-            clean = eui.replace(":", "").replace("-", "").lower()
-            if len(clean) == 16:
-                # Format as xx-xx-xx-xx-xx-xx-xx-xx
-                normalized.append("-".join([clean[i : i + 2] for i in range(0, 16, 2)]))
-            else:
-                normalized.append(eui.lower())
-        return normalized
+        return cls(
+            deveui_whitelist=_normalize_eui_list(data.get("deveui_whitelist", [])),
+            deveui_blacklist=_normalize_eui_list(data.get("deveui_blacklist", [])),
+            joineui_whitelist=_normalize_eui_list(data.get("joineui_whitelist", [])),
+            joineui_blacklist=_normalize_eui_list(data.get("joineui_blacklist", [])),
+            appeui_whitelist=_normalize_eui_list(data.get("appeui_whitelist", [])),
+            appeui_blacklist=_normalize_eui_list(data.get("appeui_blacklist", [])),
+        )
 
 
-class FieldFilterConfig(BaseModel):
+@dataclass
+class FieldFilterConfig:
     """Configuration for filtering fields in uplink messages.
 
     Attributes:
@@ -151,12 +224,29 @@ class FieldFilterConfig(BaseModel):
         always_include: Fields that are always included regardless of filters.
     """
 
-    include_fields: list[str] = Field(default_factory=list)
-    exclude_fields: list[str] = Field(default_factory=list)
-    always_include: list[str] = Field(default_factory=lambda: ["deveui", "appeui", "time"])
+    include_fields: list[str] = field(default_factory=list)
+    exclude_fields: list[str] = field(default_factory=list)
+    always_include: list[str] = field(default_factory=lambda: ["deveui", "appeui", "time"])
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> FieldFilterConfig:
+        """Create FieldFilterConfig from a dictionary.
+
+        Args:
+            data: Dictionary containing configuration data.
+
+        Returns:
+            A FieldFilterConfig instance.
+        """
+        return cls(
+            include_fields=data.get("include_fields", []),
+            exclude_fields=data.get("exclude_fields", []),
+            always_include=data.get("always_include", ["deveui", "appeui", "time"]),
+        )
 
 
-class TLSConfig(BaseModel):
+@dataclass
+class TLSConfig:
     """Configuration for TLS/SSL connections.
 
     Attributes:
@@ -168,15 +258,35 @@ class TLSConfig(BaseModel):
         insecure: Allow insecure connections (skip certificate verification).
     """
 
-    enabled: bool = Field(default=False)
-    ca_cert: str | None = Field(default=None)
-    client_cert: str | None = Field(default=None)
-    client_key: str | None = Field(default=None)
-    verify_hostname: bool = Field(default=True)
-    insecure: bool = Field(default=False)
+    enabled: bool = False
+    ca_cert: str | None = None
+    client_cert: str | None = None
+    client_key: str | None = None
+    verify_hostname: bool = True
+    insecure: bool = False
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TLSConfig:
+        """Create TLSConfig from a dictionary.
+
+        Args:
+            data: Dictionary containing configuration data.
+
+        Returns:
+            A TLSConfig instance.
+        """
+        return cls(
+            enabled=data.get("enabled", False),
+            ca_cert=data.get("ca_cert"),
+            client_cert=data.get("client_cert"),
+            client_key=data.get("client_key"),
+            verify_hostname=data.get("verify_hostname", True),
+            insecure=data.get("insecure", False),
+        )
 
 
-class RemoteBrokerConfig(BaseModel):
+@dataclass
+class RemoteBrokerConfig:
     """Configuration for a remote MQTT broker connection.
 
     Attributes:
@@ -198,57 +308,68 @@ class RemoteBrokerConfig(BaseModel):
         retain: Whether to retain published messages.
     """
 
-    name: str = Field(...)
-    enabled: bool = Field(default=True)
-    host: str = Field(...)
-    port: int = Field(default=1883, ge=1, le=65535)
-    username: str | None = Field(default=None)
-    password: str | None = Field(default=None)
-    client_id: str | None = Field(default=None)
-    tls: TLSConfig = Field(default_factory=TLSConfig)
-    source_topic_format: list[TopicFormat] = Field(
-        default_factory=lambda: [TopicFormat.LORA],
-        description="Which local topic formats to forward (lora, scada, or both)",
-    )
-    topics: TopicConfig = Field(default_factory=TopicConfig)
-    message_filter: MessageFilterConfig = Field(default_factory=MessageFilterConfig)
-    field_filter: FieldFilterConfig = Field(default_factory=FieldFilterConfig)
-    keepalive: int = Field(default=60, ge=10, le=3600)
-    clean_session: bool = Field(default=False)
-    qos: int = Field(default=1, ge=0, le=2)
-    retain: bool = Field(default=True)
+    name: str = ""
+    enabled: bool = True
+    host: str = ""
+    port: int = 1883
+    username: str | None = None
+    password: str | None = None
+    client_id: str | None = None
+    tls: TLSConfig = field(default_factory=TLSConfig)
+    source_topic_format: list[TopicFormat] = field(default_factory=lambda: [TopicFormat.LORA])
+    topics: TopicConfig = field(default_factory=TopicConfig)
+    message_filter: MessageFilterConfig = field(default_factory=MessageFilterConfig)
+    field_filter: FieldFilterConfig = field(default_factory=FieldFilterConfig)
+    keepalive: int = 60
+    clean_session: bool = False
+    qos: int = 1
+    retain: bool = True
 
-    @field_validator("source_topic_format", mode="before")
     @classmethod
-    def normalize_source_topic_format(
-        cls, v: str | list[str] | TopicFormat | list[TopicFormat]
-    ) -> list[TopicFormat]:
-        """Normalize source_topic_format to a list of TopicFormat.
+    def from_dict(cls, data: dict[str, Any]) -> RemoteBrokerConfig:
+        """Create RemoteBrokerConfig from a dictionary.
 
         Args:
-            v: A single format or list of formats (strings or TopicFormat).
+            data: Dictionary containing configuration data.
 
         Returns:
-            List of TopicFormat values.
+            A RemoteBrokerConfig instance.
         """
-        if isinstance(v, str):
-            return [TopicFormat(v)]
-        if isinstance(v, TopicFormat):
-            return [v]
-        if isinstance(v, list):
-            result = []
-            for item in v:
-                if isinstance(item, str):
-                    result.append(TopicFormat(item))
-                elif isinstance(item, TopicFormat):
-                    result.append(item)
-                else:
-                    result.append(item)
-            return result
-        return v
+        tls_data = data.get("tls", {})
+        topics_data = data.get("topics", {})
+        message_filter_data = data.get("message_filter", {})
+        field_filter_data = data.get("field_filter", {})
+
+        return cls(
+            name=data.get("name", ""),
+            enabled=data.get("enabled", True),
+            host=data.get("host", ""),
+            port=data.get("port", 1883),
+            username=data.get("username"),
+            password=data.get("password"),
+            client_id=data.get("client_id"),
+            tls=TLSConfig.from_dict(tls_data) if tls_data else TLSConfig(),
+            source_topic_format=_parse_topic_format(data.get("source_topic_format")),
+            topics=TopicConfig.from_dict(topics_data) if topics_data else TopicConfig(),
+            message_filter=(
+                MessageFilterConfig.from_dict(message_filter_data)
+                if message_filter_data
+                else MessageFilterConfig()
+            ),
+            field_filter=(
+                FieldFilterConfig.from_dict(field_filter_data)
+                if field_filter_data
+                else FieldFilterConfig()
+            ),
+            keepalive=data.get("keepalive", 60),
+            clean_session=data.get("clean_session", False),
+            qos=data.get("qos", 1),
+            retain=data.get("retain", True),
+        )
 
 
-class LogConfig(BaseModel):
+@dataclass
+class LogConfig:
     """Configuration for logging.
 
     Attributes:
@@ -257,12 +378,29 @@ class LogConfig(BaseModel):
         file: Optional file path for file logging.
     """
 
-    level: str = Field(default="INFO")
-    format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file: str | None = Field(default=None)
+    level: str = "INFO"
+    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> LogConfig:
+        """Create LogConfig from a dictionary.
+
+        Args:
+            data: Dictionary containing configuration data.
+
+        Returns:
+            A LogConfig instance.
+        """
+        return cls(
+            level=data.get("level", "INFO"),
+            format=data.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+            file=data.get("file"),
+        )
 
 
-class BridgeConfig(BaseModel):
+@dataclass
+class BridgeConfig:
     """Main configuration for the MQTT Bridge application.
 
     Attributes:
@@ -273,11 +411,11 @@ class BridgeConfig(BaseModel):
         max_reconnect_delay: Maximum reconnect delay in seconds.
     """
 
-    local_broker: LocalBrokerConfig = Field(default_factory=LocalBrokerConfig)
-    remote_brokers: list[RemoteBrokerConfig] = Field(default_factory=list)
-    log: LogConfig = Field(default_factory=LogConfig)
-    reconnect_delay: float = Field(default=1.0, ge=0.1, le=60.0)
-    max_reconnect_delay: float = Field(default=60.0, ge=1.0, le=3600.0)
+    local_broker: LocalBrokerConfig = field(default_factory=LocalBrokerConfig)
+    remote_brokers: list[RemoteBrokerConfig] = field(default_factory=list)
+    log: LogConfig = field(default_factory=LogConfig)
+    reconnect_delay: float = 1.0
+    max_reconnect_delay: float = 60.0
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BridgeConfig:
@@ -289,4 +427,20 @@ class BridgeConfig(BaseModel):
         Returns:
             A BridgeConfig instance.
         """
-        return cls(**data)
+        local_broker_data = data.get("local_broker", {})
+        remote_brokers_data = data.get("remote_brokers", [])
+        log_data = data.get("log", {})
+
+        remote_brokers = [RemoteBrokerConfig.from_dict(rb) for rb in remote_brokers_data]
+
+        return cls(
+            local_broker=(
+                LocalBrokerConfig.from_dict(local_broker_data)
+                if local_broker_data
+                else LocalBrokerConfig()
+            ),
+            remote_brokers=remote_brokers,
+            log=LogConfig.from_dict(log_data) if log_data else LogConfig(),
+            reconnect_delay=data.get("reconnect_delay", 1.0),
+            max_reconnect_delay=data.get("max_reconnect_delay", 60.0),
+        )

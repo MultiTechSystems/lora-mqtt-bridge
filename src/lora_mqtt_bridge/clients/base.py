@@ -97,16 +97,24 @@ class BaseMQTTClient(ABC):
         Returns:
             A configured paho MQTT client instance.
         """
-        # Use CallbackAPIVersion.VERSION2 for paho-mqtt 2.x
-        client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=self.client_id,
-            clean_session=self.clean_session,
-            userdata={"name": self.name},
-        )
+        # Try paho-mqtt 2.x API first, fall back to 1.x
+        try:
+            client = mqtt.Client(
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,  # type: ignore[call-arg, attr-defined]
+                client_id=self.client_id,
+                clean_session=self.clean_session,
+                userdata={"name": self.name},
+            )
+        except (TypeError, AttributeError):
+            # paho-mqtt 1.x compatibility
+            client = mqtt.Client(
+                client_id=self.client_id,
+                clean_session=self.clean_session,
+                userdata={"name": self.name},
+            )
 
         # Set up authentication
-        if self.username or self.password:
+        if self.username:
             client.username_pw_set(self.username, self.password)
 
         # Set up callbacks
@@ -286,8 +294,8 @@ class BaseMQTTClient(ABC):
         client: mqtt.Client,
         userdata: dict[str, Any],
         flags: dict[str, Any],
-        reason_code: mqtt.ReasonCode,
-        properties: mqtt.Properties | None = None,
+        reason_code: Any,
+        properties: Any = None,
     ) -> None:
         """Handle connection events.
 
@@ -309,9 +317,9 @@ class BaseMQTTClient(ABC):
         self,
         client: mqtt.Client,
         userdata: dict[str, Any],
-        disconnect_flags: mqtt.DisconnectFlags,
-        reason_code: mqtt.ReasonCode,
-        properties: mqtt.Properties | None = None,
+        disconnect_flags: Any,
+        reason_code: Any,
+        properties: Any = None,
     ) -> None:
         """Handle disconnection events.
 
@@ -330,8 +338,8 @@ class BaseMQTTClient(ABC):
         client: mqtt.Client,
         userdata: dict[str, Any],
         mid: int,
-        reason_codes: list[mqtt.ReasonCode],
-        properties: mqtt.Properties | None = None,
+        reason_codes: Any,
+        properties: Any = None,
     ) -> None:
         """Handle subscription acknowledgments.
 

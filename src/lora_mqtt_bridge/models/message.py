@@ -2,15 +2,16 @@
 
 This module defines data models for LoRaWAN messages including
 uplinks, downlinks, and join events.
+
+Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any
-
-from pydantic import BaseModel, Field, field_validator
 
 
 class MessageType(str, Enum):
@@ -23,7 +24,29 @@ class MessageType(str, Enum):
     CLEAR = "clear"
 
 
-class LoRaMessage(BaseModel):
+def _normalize_eui(eui: str | int | None) -> str | None:
+    """Normalize EUI values to lowercase with dashes.
+
+    Args:
+        eui: The EUI string (or int) to normalize.
+
+    Returns:
+        The normalized EUI string or None.
+    """
+    if eui is None:
+        return None
+    # Convert to string if not already
+    if not isinstance(eui, str):
+        eui = str(eui)
+    # Remove colons and convert to lowercase with dashes
+    clean = eui.replace(":", "").replace("-", "").lower()
+    if len(clean) == 16:
+        return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
+    return eui.lower()
+
+
+@dataclass
+class LoRaMessage:
     """Model representing a LoRaWAN message.
 
     Attributes:
@@ -39,35 +62,23 @@ class LoRaMessage(BaseModel):
         topic: The original MQTT topic.
     """
 
-    deveui: str = Field(...)
-    appeui: str | None = Field(default=None)
-    joineui: str | None = Field(default=None)
-    gweui: str | None = Field(default=None)
-    time: datetime | str | None = Field(default=None)
-    port: int | None = Field(default=None, ge=0, le=255)
-    data: str | None = Field(default=None)
-    raw_data: dict[str, Any] = Field(default_factory=dict)
-    message_type: MessageType = Field(default=MessageType.UPLINK)
-    topic: str | None = Field(default=None)
+    deveui: str = ""
+    appeui: str | None = None
+    joineui: str | None = None
+    gweui: str | None = None
+    time: datetime | str | None = None
+    port: int | None = None
+    data: str | None = None
+    raw_data: dict[str, Any] = field(default_factory=dict)
+    message_type: MessageType = MessageType.UPLINK
+    topic: str | None = None
 
-    @field_validator("deveui", "appeui", "joineui", "gweui", mode="before")
-    @classmethod
-    def normalize_eui(cls, v: str | None) -> str | None:
-        """Normalize EUI values to lowercase with dashes.
-
-        Args:
-            v: The EUI string to normalize.
-
-        Returns:
-            The normalized EUI string or None.
-        """
-        if v is None:
-            return None
-        # Remove colons and convert to lowercase with dashes
-        clean = v.replace(":", "").replace("-", "").lower()
-        if len(clean) == 16:
-            return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
-        return v.lower()
+    def __post_init__(self) -> None:
+        """Normalize EUI values after initialization."""
+        self.deveui = _normalize_eui(self.deveui) or ""
+        self.appeui = _normalize_eui(self.appeui)
+        self.joineui = _normalize_eui(self.joineui)
+        self.gweui = _normalize_eui(self.gweui)
 
     @classmethod
     def from_mqtt_payload(
@@ -87,10 +98,17 @@ class LoRaMessage(BaseModel):
             A LoRaMessage instance.
 
         Raises:
-            ValueError: If required fields are missing.
+            ValueError: If required fields are missing or invalid.
         """
         if "deveui" not in payload:
             raise ValueError("Message payload must contain 'deveui' field")
+
+        deveui = payload.get("deveui")
+        # Reject null, empty, or whitespace-only deveui
+        if deveui is None:
+            raise ValueError("deveui cannot be null")
+        if isinstance(deveui, str) and not deveui.strip():
+            raise ValueError("deveui cannot be empty")
 
         return cls(
             deveui=payload.get("deveui", ""),
@@ -132,8 +150,8 @@ class LoRaMessage(BaseModel):
         always_include = always_include or ["deveui", "appeui", "time"]
         exclude_fields = exclude_fields or []
 
-        result = {}
-        source = self.raw_data if self.raw_data else self.model_dump(exclude_none=True)
+        result: dict[str, Any] = {}
+        source = self.raw_data if self.raw_data else self._to_dict()
 
         for key, value in source.items():
             # Skip internal fields
@@ -157,8 +175,32 @@ class LoRaMessage(BaseModel):
 
         return result
 
+    def _to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary, excluding None values.
 
-class DownlinkMessage(BaseModel):
+        Returns:
+            Dictionary representation.
+        """
+        result: dict[str, Any] = {}
+        if self.deveui:
+            result["deveui"] = self.deveui
+        if self.appeui:
+            result["appeui"] = self.appeui
+        if self.joineui:
+            result["joineui"] = self.joineui
+        if self.gweui:
+            result["gweui"] = self.gweui
+        if self.time:
+            result["time"] = self.time
+        if self.port is not None:
+            result["port"] = self.port
+        if self.data:
+            result["data"] = self.data
+        return result
+
+
+@dataclass
+class DownlinkMessage:
     """Model representing a LoRaWAN downlink message.
 
     Attributes:
@@ -169,24 +211,12 @@ class DownlinkMessage(BaseModel):
         priority: The priority of the downlink.
     """
 
-    deveui: str = Field(...)
-    port: int = Field(default=1, ge=0, le=255)
-    data: str = Field(...)
-    confirmed: bool = Field(default=False)
-    priority: int = Field(default=0, ge=0, le=255)
+    deveui: str = ""
+    port: int = 1
+    data: str = ""
+    confirmed: bool = False
+    priority: int = 0
 
-    @field_validator("deveui", mode="before")
-    @classmethod
-    def normalize_deveui(cls, v: str) -> str:
-        """Normalize DevEUI to lowercase with dashes.
-
-        Args:
-            v: The DevEUI string to normalize.
-
-        Returns:
-            The normalized DevEUI string.
-        """
-        clean = v.replace(":", "").replace("-", "").lower()
-        if len(clean) == 16:
-            return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
-        return v.lower()
+    def __post_init__(self) -> None:
+        """Normalize DevEUI after initialization."""
+        self.deveui = _normalize_eui(self.deveui) or ""

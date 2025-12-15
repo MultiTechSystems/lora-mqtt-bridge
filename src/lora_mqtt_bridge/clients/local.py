@@ -63,9 +63,9 @@ class LocalMQTTClient(BaseMQTTClient):
         self.subscribe("lora/+/+/moved")
         self._subscribed_topics.append("lora/+/+/moved")
 
-        # Subscribe to SCADA topics
-        self.subscribe("scada/+/up")
-        self._subscribed_topics.append("scada/+/up")
+        # Subscribe to SCADA topics (scada/lorawan/$deveui/up)
+        self.subscribe("scada/+/+/up")
+        self._subscribed_topics.append("scada/+/+/up")
 
         logger.info(
             "Local client subscribed to %d topics (lora and scada)",

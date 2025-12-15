@@ -2,6 +2,8 @@
 
 This module provides the MQTT client implementation for connecting
 to remote MQTT brokers with filtering capabilities.
+
+Compatible with Python 3.10+ and paho-mqtt 1.6.x (mLinux 7.1.0)
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from lora_mqtt_bridge.clients.base import BaseMQTTClient
 from lora_mqtt_bridge.filters.field_filter import FieldFilter
 from lora_mqtt_bridge.filters.message_filter import MessageFilter
 from lora_mqtt_bridge.models.message import LoRaMessage
+from lora_mqtt_bridge.utils.system_info import get_gateway_uuid
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import RemoteBrokerConfig
@@ -141,7 +144,7 @@ class RemoteMQTTClient(BaseMQTTClient):
         pattern = self.config.topics.get_uplink_pattern()
 
         # Replace wildcards with actual values
-        # Pattern could be like "lorawan/%(appeui)s/%(deveui)s/up"
+        # Pattern could be like "lorawan/%(gwuuid)s/%(appeui)s/%(deveui)s/up"
         # or "lora/+/+/up" style
 
         if "%" in pattern:
@@ -151,12 +154,13 @@ class RemoteMQTTClient(BaseMQTTClient):
                 "appeui": message.appeui or "",
                 "joineui": message.get_effective_joineui() or "",
                 "gweui": message.gweui or "",
+                "gwuuid": get_gateway_uuid(),
             }
             return pattern % format_dict
         else:
             # Replace + wildcards with actual values
             parts = pattern.split("/")
-            result_parts = []
+            result_parts: list[str] = []
             for part in parts:
                 if part == "+":
                     # Try to substitute with deveui, then appeui
@@ -215,7 +219,7 @@ class RemoteMQTTClient(BaseMQTTClient):
                 data.get("deveui"),
                 self.name,
             )
-            return data
+            return dict(data)
         except json.JSONDecodeError:
             logger.error("Failed to parse downlink payload as JSON")
             return None
