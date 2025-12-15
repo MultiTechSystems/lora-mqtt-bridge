@@ -200,11 +200,14 @@ SCADA topics contain JSON-decoded payload data instead of base64-encoded data.
 On mLinux gateways, the application writes status to `/var/config/app/lora_mqtt_bridge/status.json`:
 
 ```json
-{
-  "pid": 12345,
-  "AppInfo": "Local:OK | Remote:2/2 | Msgs:1234 @ 14:30:00"
-}
+{"pid": 12345, "AppInfo": "Local:OK | Remote:1/1 | Msgs:42 @ 14:30:00"}
 ```
+
+Status format: `Local:{OK|DISC} | Remote:{connected}/{total} [| Msgs:{count}] @ {time}`
+
+- `Local:OK` - Connected to local broker, `Local:DISC` - Disconnected
+- `Remote:1/2` - 1 of 2 remote brokers connected
+- `Msgs:42` - Messages forwarded (only shown when > 0)
 
 ## Development
 
