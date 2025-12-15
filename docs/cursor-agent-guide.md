@@ -131,26 +131,45 @@ Requirements:
 Create a status writer that outputs status.json for mLinux app-manager.
 
 Requirements:
-- Write to $APP_DIR/status.json
-- Include fields: appInfo, extraInfo (as JSON object)
-- Update periodically in background thread
+- Write to $APP_DIR/status.json (use APP_DIR environment variable)
+- Include fields: pid (integer), AppInfo (string, max 160 chars)
+- Update periodically in background thread (e.g., every 10 seconds)
 - Thread-safe status updates
-- Graceful shutdown
+- Write atomically (write to .tmp file, then rename)
+- Graceful shutdown with final status write
 ```
 
 Example status.json format:
 ```json
-{
-  "appInfo": "Running - Connected to 2 brokers",
-  "extraInfo": {
-    "local_broker": "connected",
-    "remote_brokers": {
-      "cloud": "connected",
-      "backup": "disconnected"
-    },
-    "messages_forwarded": 1234
-  }
-}
+{"pid": 12345, "AppInfo": "Local:OK | Remote:1/1 | Msgs:42 @ 14:30:00"}
+```
+
+**Important**: The `pid` field must be an integer (not a string) for app-manager to correctly track the process.
+
+Status format: `Local:{OK|DISC} | Remote:{connected}/{total} [| Msgs:{count}] @ {time}`
+
+Example implementation pattern:
+```python
+class StatusWriter:
+    def __init__(self, app_dir: str | None = None, update_interval: float = 10.0):
+        self.app_dir = app_dir if app_dir else (os.getenv("APP_DIR") or ".")
+        self.status_file = os.path.join(self.app_dir, "status.json")
+        self._running = False
+        self._thread: threading.Thread | None = None
+        
+    def start(self) -> None:
+        """Start background status update thread."""
+        self._running = True
+        self._thread = threading.Thread(target=self._update_loop, daemon=True)
+        self._thread.start()
+        
+    def _write_status(self, app_info: str) -> None:
+        """Write status.json atomically."""
+        status_data = {"pid": os.getpid(), "AppInfo": app_info[:160]}
+        temp_file = self.status_file + ".tmp"
+        with open(temp_file, "w") as f:
+            json.dump(status_data, f)
+        os.replace(temp_file, self.status_file)
 ```
 
 ### 3. Syslog Logging
