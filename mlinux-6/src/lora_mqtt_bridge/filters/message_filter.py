@@ -9,7 +9,7 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import MessageFilterConfig
@@ -29,7 +29,7 @@ class MessageFilter:
         config: The filter configuration.
     """
 
-    def __init__(self, config: "MessageFilterConfig") -> None:
+    def __init__(self, config: MessageFilterConfig) -> None:
         """Initialize the message filter.
 
         Args:
@@ -43,7 +43,7 @@ class MessageFilter:
         self._appeui_whitelist = set(config.appeui_whitelist)  # type: Set[str]
         self._appeui_blacklist = set(config.appeui_blacklist)  # type: Set[str]
 
-    def _normalize_eui(self, eui: Optional[str]) -> Optional[str]:
+    def _normalize_eui(self, eui: str | None) -> str | None:
         """Normalize an EUI value for comparison.
 
         Args:
@@ -61,9 +61,9 @@ class MessageFilter:
 
     def _check_whitelist(
         self,
-        value: Optional[str],
-        whitelist: Set[str],
-        blacklist: Set[str],
+        value: str | None,
+        whitelist: set[str],
+        blacklist: set[str],
         field_name: str,
     ) -> bool:
         """Check if a value passes whitelist/blacklist filtering.
@@ -98,7 +98,7 @@ class MessageFilter:
 
         return True
 
-    def should_forward(self, message: "LoRaMessage") -> bool:
+    def should_forward(self, message: LoRaMessage) -> bool:
         """Determine if a message should be forwarded based on filters.
 
         Args:

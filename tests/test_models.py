@@ -21,10 +21,7 @@ from lora_mqtt_bridge.models.config import (
 from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
+    pass
 
 
 class TestTopicConfig:

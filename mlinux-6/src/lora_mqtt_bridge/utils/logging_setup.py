@@ -12,13 +12,13 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import LogConfig
 
 
-def setup_logging(config: Optional["LogConfig"] = None) -> logging.Logger:
+def setup_logging(config: LogConfig | None = None) -> logging.Logger:
     """Set up logging for the application.
 
     Args:

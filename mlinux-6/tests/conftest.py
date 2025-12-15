@@ -6,7 +6,7 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -23,15 +23,11 @@ from lora_mqtt_bridge.models.config import (
 from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 @pytest.fixture
-def sample_uplink_payload() -> Dict[str, Any]:
+def sample_uplink_payload() -> dict[str, Any]:
     """Create a sample uplink message payload.
 
     Returns:
@@ -53,7 +49,7 @@ def sample_uplink_payload() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_lora_message(sample_uplink_payload: Dict[str, Any]) -> LoRaMessage:
+def sample_lora_message(sample_uplink_payload: dict[str, Any]) -> LoRaMessage:
     """Create a sample LoRaMessage instance.
 
     Args:

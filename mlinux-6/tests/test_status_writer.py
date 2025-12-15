@@ -5,8 +5,6 @@ import os
 import tempfile
 import time
 
-import pytest
-
 from lora_mqtt_bridge.utils.status_writer import StatusWriter
 
 
@@ -27,7 +25,7 @@ class TestStatusWriter:
             writer = StatusWriter(app_dir=tmpdir)
             writer.write_immediate("Test message")
 
-            with open(writer.status_file, "r") as f:
+            with open(writer.status_file) as f:
                 data = json.load(f)
 
             assert "pid" in data
@@ -78,7 +76,7 @@ class TestStatusWriter:
 
             # Add more than 5 errors to test limit
             for i in range(10):
-                writer.add_error("Error {}".format(i))
+                writer.add_error(f"Error {i}")
 
             assert len(writer._errors) == 5  # Should keep only last 5
 
@@ -155,6 +153,6 @@ class TestStatusWriter:
             assert writer._running is False
 
             # Check that final status was written
-            with open(writer.status_file, "r") as f:
+            with open(writer.status_file) as f:
                 data = json.load(f)
             assert data["AppInfo"] == "Stopped"

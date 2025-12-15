@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -20,11 +19,7 @@ from lora_mqtt_bridge.utils.config_loader import (
 )
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
     from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
 
 
 class TestLoadConfig:

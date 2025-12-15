@@ -11,8 +11,9 @@ import ssl
 import tempfile
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import paho.mqtt.client as mqtt
 

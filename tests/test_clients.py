@@ -6,10 +6,8 @@ This module contains tests for the MQTT client implementations.
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from lora_mqtt_bridge.clients.local import LocalMQTTClient
 from lora_mqtt_bridge.clients.remote import RemoteMQTTClient
@@ -18,17 +16,11 @@ from lora_mqtt_bridge.models.config import (
     LocalBrokerConfig,
     MessageFilterConfig,
     RemoteBrokerConfig,
-    TopicConfig,
-    TopicFormat,
 )
-from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.models.message import LoRaMessage
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 class TestLocalMQTTClient:

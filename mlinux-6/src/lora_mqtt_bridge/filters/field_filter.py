@@ -9,7 +9,7 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Set
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import FieldFilterConfig
@@ -28,7 +28,7 @@ class FieldFilter:
         config: The field filter configuration.
     """
 
-    def __init__(self, config: "FieldFilterConfig") -> None:
+    def __init__(self, config: FieldFilterConfig) -> None:
         """Initialize the field filter.
 
         Args:
@@ -39,7 +39,7 @@ class FieldFilter:
         self._exclude_fields = set(config.exclude_fields)  # type: Set[str]
         self._always_include = set(config.always_include)  # type: Set[str]
 
-    def filter_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def filter_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Filter a message payload based on configured rules.
 
         Args:
@@ -111,7 +111,7 @@ class FieldFilter:
         self._exclude_fields.discard(field)
         logger.info("Removed field '%s' from exclude list", field)
 
-    def set_always_include(self, fields: List[str]) -> None:
+    def set_always_include(self, fields: list[str]) -> None:
         """Set the list of fields to always include.
 
         Args:

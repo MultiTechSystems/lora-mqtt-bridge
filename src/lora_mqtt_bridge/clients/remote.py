@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from lora_mqtt_bridge.clients.base import BaseMQTTClient
 from lora_mqtt_bridge.filters.field_filter import FieldFilter
 from lora_mqtt_bridge.filters.message_filter import MessageFilter
-from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.models.message import LoRaMessage
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import RemoteBrokerConfig

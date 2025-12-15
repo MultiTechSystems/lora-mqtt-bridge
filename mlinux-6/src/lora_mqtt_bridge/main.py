@@ -13,7 +13,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from lora_mqtt_bridge import __version__
 from lora_mqtt_bridge.bridge import MQTTBridge
@@ -78,13 +78,13 @@ Environment Variables:
         "-v",
         "--version",
         action="version",
-        version="%(prog)s {}".format(__version__),
+        version=f"%(prog)s {__version__}",
     )
 
     return parser.parse_args()
 
 
-def load_configuration(args: argparse.Namespace) -> "BridgeConfig":
+def load_configuration(args: argparse.Namespace) -> BridgeConfig:
     """Load configuration based on command line arguments.
 
     Args:
@@ -157,7 +157,7 @@ def load_configuration(args: argparse.Namespace) -> "BridgeConfig":
     return config
 
 
-def validate_config(config: "BridgeConfig") -> bool:
+def validate_config(config: BridgeConfig) -> bool:
     """Validate the configuration.
 
     Args:
@@ -177,7 +177,7 @@ def validate_config(config: "BridgeConfig") -> bool:
 
 
 def main() -> int:
-    """Main entry point.
+    """Run the MQTT bridge application.
 
     Returns:
         Exit code (0 for success, non-zero for failure).

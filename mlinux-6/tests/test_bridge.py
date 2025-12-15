@@ -7,10 +7,8 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from lora_mqtt_bridge.bridge import MQTTBridge
 from lora_mqtt_bridge.models.config import (
@@ -21,11 +19,7 @@ from lora_mqtt_bridge.models.config import (
 from lora_mqtt_bridge.models.message import MessageType
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 class TestMQTTBridge:
@@ -208,7 +202,7 @@ class TestMQTTBridge:
         self,
         mock_forward: MagicMock,
         bridge_config: BridgeConfig,
-        sample_uplink_payload: Dict[str, Any],
+        sample_uplink_payload: dict[str, Any],
     ) -> None:
         """Test that local messages are forwarded to remote brokers.
 

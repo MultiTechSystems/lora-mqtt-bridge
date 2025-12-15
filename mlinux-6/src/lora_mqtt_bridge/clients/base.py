@@ -13,8 +13,9 @@ import ssl
 import tempfile
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import paho.mqtt.client as mqtt
 
@@ -46,9 +47,9 @@ class BaseMQTTClient(ABC):
         name: str,
         host: str,
         port: int = 1883,
-        client_id: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        client_id: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
         keepalive: int = 60,
         clean_session: bool = False,
     ) -> None:
@@ -67,7 +68,7 @@ class BaseMQTTClient(ABC):
         self.name = name
         self.host = host
         self.port = port
-        self.client_id = client_id or "lora-mqtt-bridge-{}".format(name)
+        self.client_id = client_id or f"lora-mqtt-bridge-{name}"
         self.username = username
         self.password = password
         self.keepalive = keepalive
@@ -115,9 +116,9 @@ class BaseMQTTClient(ABC):
 
     def configure_tls(
         self,
-        ca_cert: Optional[str] = None,
-        client_cert: Optional[str] = None,
-        client_key: Optional[str] = None,
+        ca_cert: str | None = None,
+        client_cert: str | None = None,
+        client_key: str | None = None,
         verify_hostname: bool = True,
         insecure: bool = False,
     ) -> None:
@@ -158,9 +159,9 @@ class BaseMQTTClient(ABC):
             logger.info("TLS configured for client %s", self.name)
         except Exception as e:
             logger.exception("Failed to configure TLS for client %s", self.name)
-            raise RuntimeError("TLS configuration failed: {}".format(e))
+            raise RuntimeError(f"TLS configuration failed: {e}") from e
 
-    def _prepare_cert_file(self, cert_data: Optional[str], prefix: str) -> Optional[str]:
+    def _prepare_cert_file(self, cert_data: str | None, prefix: str) -> str | None:
         """Prepare a certificate file from path or content.
 
         Args:
@@ -180,7 +181,7 @@ class BaseMQTTClient(ABC):
         # It's certificate content, write to temp file
         temp_file = tempfile.NamedTemporaryFile(
             mode="w",
-            prefix="{}_{}".format(prefix, self.name),
+            prefix=f"{prefix}_{self.name}",
             suffix=".pem",
             delete=False,
         )
@@ -208,7 +209,7 @@ class BaseMQTTClient(ABC):
             self._client.loop_start()
         except Exception as e:
             logger.exception("Failed to connect to %s", self.name)
-            raise RuntimeError("Connection to {} failed: {}".format(self.name, e))
+            raise RuntimeError(f"Connection to {self.name} failed: {e}") from e
 
     def disconnect(self) -> None:
         """Disconnect from the MQTT broker."""
@@ -244,7 +245,7 @@ class BaseMQTTClient(ABC):
     def publish(
         self,
         topic: str,
-        payload: Optional[Any],
+        payload: Any | None,
         qos: int = 1,
         retain: bool = False,
     ) -> None:
@@ -287,8 +288,8 @@ class BaseMQTTClient(ABC):
     def _on_connect(
         self,
         client: mqtt.Client,
-        userdata: Dict[str, Any],
-        flags: Dict[str, Any],
+        userdata: dict[str, Any],
+        flags: dict[str, Any],
         rc: int,
     ) -> None:
         """Handle connection events (paho-mqtt 1.6.x callback signature).
@@ -309,7 +310,7 @@ class BaseMQTTClient(ABC):
     def _on_disconnect(
         self,
         client: mqtt.Client,
-        userdata: Dict[str, Any],
+        userdata: dict[str, Any],
         rc: int,
     ) -> None:
         """Handle disconnection events (paho-mqtt 1.6.x callback signature).
@@ -325,7 +326,7 @@ class BaseMQTTClient(ABC):
     def _on_subscribe(
         self,
         client: mqtt.Client,
-        userdata: Dict[str, Any],
+        userdata: dict[str, Any],
         mid: int,
         granted_qos: Any,
     ) -> None:
@@ -342,7 +343,7 @@ class BaseMQTTClient(ABC):
     def _on_message(
         self,
         client: mqtt.Client,
-        userdata: Dict[str, Any],
+        userdata: dict[str, Any],
         msg: mqtt.MQTTMessage,
     ) -> None:
         """Handle received messages (paho-mqtt 1.6.x callback signature).

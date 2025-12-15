@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from lora_mqtt_bridge.clients.base import BaseMQTTClient
 from lora_mqtt_bridge.filters.field_filter import FieldFilter
 from lora_mqtt_bridge.filters.message_filter import MessageFilter
-from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.models.message import LoRaMessage
 from lora_mqtt_bridge.utils.system_info import get_gateway_uuid
 
 if TYPE_CHECKING:
@@ -37,13 +37,13 @@ class RemoteMQTTClient(BaseMQTTClient):
         field_filter: Filter for fields in message payloads.
     """
 
-    def __init__(self, config: "RemoteBrokerConfig") -> None:
+    def __init__(self, config: RemoteBrokerConfig) -> None:
         """Initialize the remote MQTT client.
 
         Args:
             config: The remote broker configuration.
         """
-        client_id = config.client_id or "lora-mqtt-bridge-{}".format(config.name)
+        client_id = config.client_id or f"lora-mqtt-bridge-{config.name}"
         super().__init__(
             name=config.name,
             host=config.host,
@@ -198,7 +198,7 @@ class RemoteMQTTClient(BaseMQTTClient):
             len(self._message_queue),
         )
 
-    def handle_downlink(self, topic: str, payload: bytes) -> Optional[Dict[str, Any]]:
+    def handle_downlink(self, topic: str, payload: bytes) -> dict[str, Any] | None:
         """Handle a downlink message from this remote broker.
 
         Args:

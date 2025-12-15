@@ -6,21 +6,15 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
-
-import pytest
+from typing import TYPE_CHECKING, Any
 
 from lora_mqtt_bridge.filters.field_filter import FieldFilter
 from lora_mqtt_bridge.filters.message_filter import MessageFilter
 from lora_mqtt_bridge.models.config import FieldFilterConfig, MessageFilterConfig
-from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.models.message import LoRaMessage
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 class TestMessageFilter:
@@ -181,7 +175,7 @@ class TestMessageFilter:
 class TestFieldFilter:
     """Tests for FieldFilter class."""
 
-    def test_no_filters_returns_all(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_no_filters_returns_all(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test that empty filters return all fields.
 
         Args:
@@ -197,7 +191,7 @@ class TestFieldFilter:
 
         assert result == sample_uplink_payload
 
-    def test_exclude_fields(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_exclude_fields(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test excluding specific fields.
 
         Args:
@@ -216,7 +210,7 @@ class TestFieldFilter:
         assert "deveui" in result
         assert "port" in result
 
-    def test_include_fields(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_include_fields(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test including only specific fields.
 
         Args:
@@ -231,7 +225,7 @@ class TestFieldFilter:
 
         assert set(result.keys()) == {"deveui", "port", "data"}
 
-    def test_always_include(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_always_include(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test always-include fields.
 
         Args:
@@ -252,7 +246,7 @@ class TestFieldFilter:
         assert "rssi" not in result
 
     def test_exclude_with_always_include(
-        self, sample_uplink_payload: Dict[str, Any]
+        self, sample_uplink_payload: dict[str, Any]
     ) -> None:
         """Test that always-include overrides exclude.
 
@@ -271,7 +265,7 @@ class TestFieldFilter:
         # rssi should be excluded
         assert "rssi" not in result
 
-    def test_add_exclude_field(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_add_exclude_field(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test dynamically adding exclude field.
 
         Args:

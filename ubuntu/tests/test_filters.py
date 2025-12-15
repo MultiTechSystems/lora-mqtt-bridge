@@ -7,19 +7,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
 from lora_mqtt_bridge.filters.field_filter import FieldFilter
 from lora_mqtt_bridge.filters.message_filter import MessageFilter
 from lora_mqtt_bridge.models.config import FieldFilterConfig, MessageFilterConfig
-from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.models.message import LoRaMessage
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 class TestMessageFilter:

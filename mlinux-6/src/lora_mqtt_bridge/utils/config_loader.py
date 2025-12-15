@@ -12,7 +12,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from lora_mqtt_bridge.models.config import (
     BridgeConfig,
@@ -43,7 +43,7 @@ def load_config(config_path: str) -> BridgeConfig:
     """
     path = Path(config_path)
     if not path.exists():
-        raise FileNotFoundError("Configuration file not found: {}".format(path))
+        raise FileNotFoundError(f"Configuration file not found: {path}")
 
     try:
         with open(path, encoding="utf-8") as f:
@@ -51,9 +51,9 @@ def load_config(config_path: str) -> BridgeConfig:
 
         return BridgeConfig.from_dict(data)
     except json.JSONDecodeError as e:
-        raise ValueError("Invalid JSON in config file: {}".format(e))
+        raise ValueError(f"Invalid JSON in config file: {e}") from e
     except Exception as e:
-        raise ValueError("Failed to load config: {}".format(e))
+        raise ValueError(f"Failed to load config: {e}") from e
 
 
 def load_config_from_env() -> BridgeConfig:
@@ -66,8 +66,8 @@ def load_config_from_env() -> BridgeConfig:
     """
     prefix = "LORA_MQTT_BRIDGE_"
 
-    def get_env(key: str, default: Optional[str] = None) -> Optional[str]:
-        return os.environ.get("{}{}".format(prefix, key), default)
+    def get_env(key: str, default: str | None = None) -> str | None:
+        return os.environ.get(f"{prefix}{key}", default)
 
     def get_env_bool(key: str, default: bool = False) -> bool:
         value = get_env(key)
@@ -84,7 +84,7 @@ def load_config_from_env() -> BridgeConfig:
         except ValueError:
             return default
 
-    def get_env_list(key: str) -> List[str]:
+    def get_env_list(key: str) -> list[str]:
         value = get_env(key)
         if value is None or value.strip() == "":
             return []
@@ -180,7 +180,7 @@ def load_config_from_env() -> BridgeConfig:
     )
 
 
-def _parse_remote_broker(data: Dict[str, Any]) -> RemoteBrokerConfig:
+def _parse_remote_broker(data: dict[str, Any]) -> RemoteBrokerConfig:
     """Parse a remote broker configuration from a dictionary.
 
     Args:

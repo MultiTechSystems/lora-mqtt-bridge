@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class MessageType(str, Enum):
@@ -24,7 +24,7 @@ class MessageType(str, Enum):
     CLEAR = "clear"
 
 
-def _normalize_eui(eui: Union[str, int, None]) -> Optional[str]:
+def _normalize_eui(eui: str | int | None) -> str | None:
     """Normalize EUI values to lowercase with dashes.
 
     Args:
@@ -63,15 +63,15 @@ class LoRaMessage:
     """
 
     deveui: str = ""
-    appeui: Optional[str] = None
-    joineui: Optional[str] = None
-    gweui: Optional[str] = None
-    time: Optional[Union[datetime, str]] = None
-    port: Optional[int] = None
-    data: Optional[str] = None
-    raw_data: Dict[str, Any] = field(default_factory=dict)
+    appeui: str | None = None
+    joineui: str | None = None
+    gweui: str | None = None
+    time: datetime | str | None = None
+    port: int | None = None
+    data: str | None = None
+    raw_data: dict[str, Any] = field(default_factory=dict)
     message_type: MessageType = MessageType.UPLINK
-    topic: Optional[str] = None
+    topic: str | None = None
 
     def __post_init__(self) -> None:
         """Normalize EUI values after initialization."""
@@ -83,10 +83,10 @@ class LoRaMessage:
     @classmethod
     def from_mqtt_payload(
         cls,
-        payload: Dict[str, Any],
-        topic: Optional[str] = None,
+        payload: dict[str, Any],
+        topic: str | None = None,
         message_type: MessageType = MessageType.UPLINK,
-    ) -> "LoRaMessage":
+    ) -> LoRaMessage:
         """Create a LoRaMessage from an MQTT payload.
 
         Args:
@@ -123,7 +123,7 @@ class LoRaMessage:
             topic=topic,
         )
 
-    def get_effective_joineui(self) -> Optional[str]:
+    def get_effective_joineui(self) -> str | None:
         """Get the effective JoinEUI (joineui or appeui).
 
         Returns:
@@ -133,10 +133,10 @@ class LoRaMessage:
 
     def to_filtered_dict(
         self,
-        include_fields: Optional[List[str]] = None,
-        exclude_fields: Optional[List[str]] = None,
-        always_include: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        include_fields: list[str] | None = None,
+        exclude_fields: list[str] | None = None,
+        always_include: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Convert message to a filtered dictionary.
 
         Args:
@@ -175,7 +175,7 @@ class LoRaMessage:
 
         return result
 
-    def _to_dict(self) -> Dict[str, Any]:
+    def _to_dict(self) -> dict[str, Any]:
         """Convert to dictionary, excluding None values.
 
         Returns:

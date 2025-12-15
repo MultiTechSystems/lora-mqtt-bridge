@@ -177,7 +177,7 @@ def validate_config(config: BridgeConfig) -> bool:
 
 
 def main() -> int:
-    """Main entry point.
+    """Run the MQTT bridge application.
 
     Returns:
         Exit code (0 for success, non-zero for failure).

@@ -6,7 +6,7 @@ Compatible with Python 3.8+ (mLinux 6.3.5)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -22,11 +22,7 @@ from lora_mqtt_bridge.models.config import (
 from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
 
 if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
-    from _pytest.fixtures import FixtureRequest
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
-    from pytest_mock.plugin import MockerFixture
+    pass
 
 
 class TestTopicConfig:
@@ -171,7 +167,7 @@ class TestRemoteBrokerConfig:
 class TestLoRaMessage:
     """Tests for LoRaMessage model."""
 
-    def test_from_mqtt_payload(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_from_mqtt_payload(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test creating message from MQTT payload.
 
         Args:
@@ -218,7 +214,7 @@ class TestLoRaMessage:
         )
         assert message.get_effective_joineui() == "ff-ff-ff-ff-ff-ff-ff-ff"
 
-    def test_to_filtered_dict(self, sample_uplink_payload: Dict[str, Any]) -> None:
+    def test_to_filtered_dict(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test filtering message fields.
 
         Args:

@@ -10,8 +10,7 @@ import json
 import logging
 import signal
 import threading
-import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from lora_mqtt_bridge.clients.local import LocalMQTTClient
 from lora_mqtt_bridge.clients.remote import RemoteMQTTClient
@@ -258,7 +257,7 @@ class MQTTBridge:
             logger.info("Processing downlink for %s", deveui)
             self.local_client.publish_downlink(deveui, json.dumps(data))
 
-    def _parse_message_type(self, topic: str) -> Optional[MessageType]:
+    def _parse_message_type(self, topic: str) -> MessageType | None:
         """Parse the message type from an MQTT topic.
 
         Args:
@@ -285,7 +284,7 @@ class MQTTBridge:
 
         return None
 
-    def _get_source_topic_format(self, topic: str) -> Optional[TopicFormat]:
+    def _get_source_topic_format(self, topic: str) -> TopicFormat | None:
         """Determine the source topic format from the topic string.
 
         Args:
@@ -306,7 +305,7 @@ class MQTTBridge:
 
         return None
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get the current status of the bridge.
 
         Returns:

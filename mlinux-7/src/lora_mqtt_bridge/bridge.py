@@ -10,7 +10,6 @@ import json
 import logging
 import signal
 import threading
-import time
 from typing import TYPE_CHECKING, Any
 
 from lora_mqtt_bridge.clients.local import LocalMQTTClient

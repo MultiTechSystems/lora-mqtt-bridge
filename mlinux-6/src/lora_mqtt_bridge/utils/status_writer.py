@@ -14,7 +14,7 @@ import logging
 import os
 import threading
 import time
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class StatusWriter:
 
     def __init__(
         self,
-        app_dir: Optional[str] = None,
+        app_dir: str | None = None,
         update_interval: float = 10.0,
     ) -> None:
         """Initialize the status writer.
@@ -47,20 +47,20 @@ class StatusWriter:
         self.update_interval = update_interval
 
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
 
         # Status information
         self._app_info = "Starting..."
-        self._extra_info: Dict[str, Any] = {}
+        self._extra_info: dict[str, Any] = {}
 
         # Connection status tracking
         self._local_connected = False
-        self._remote_connections: Dict[str, bool] = {}
+        self._remote_connections: dict[str, bool] = {}
         self._message_count = 0
-        self._last_message_time: Optional[str] = None
-        self._errors: List[str] = []
+        self._last_message_time: str | None = None
+        self._errors: list[str] = []
 
     def start(self) -> None:
         """Start the background status update thread."""
@@ -152,7 +152,7 @@ class StatusWriter:
             remote_connected = sum(1 for c in self._remote_connections.values() if c)
 
             if remote_count > 0:
-                remote_status = "Remote:{}/{}".format(remote_connected, remote_count)
+                remote_status = f"Remote:{remote_connected}/{remote_count}"
             else:
                 remote_status = "Remote:none"
 
@@ -160,20 +160,20 @@ class StatusWriter:
             parts = [local_status, remote_status]
 
             if self._message_count > 0:
-                parts.append("Msgs:{}".format(self._message_count))
+                parts.append(f"Msgs:{self._message_count}")
 
             if self._errors:
-                parts.append("Errs:{}".format(len(self._errors)))
+                parts.append(f"Errs:{len(self._errors)}")
 
             status = " | ".join(parts)
 
             # Add timestamp
             timestamp = time.strftime("%H:%M:%S")
-            status = "{} @ {}".format(status, timestamp)
+            status = f"{status} @ {timestamp}"
 
             return status[:160]  # Truncate to 160 chars
 
-    def _write_status(self, app_info: Optional[str] = None) -> None:
+    def _write_status(self, app_info: str | None = None) -> None:
         """Write the status.json file.
 
         Args:
@@ -217,7 +217,7 @@ class StatusWriter:
 
 
 # Global status writer instance
-_status_writer: Optional[StatusWriter] = None
+_status_writer: StatusWriter | None = None
 
 
 def get_status_writer() -> StatusWriter:
@@ -233,7 +233,7 @@ def get_status_writer() -> StatusWriter:
 
 
 def init_status_writer(
-    app_dir: Optional[str] = None,
+    app_dir: str | None = None,
     update_interval: float = 10.0,
 ) -> StatusWriter:
     """Initialize and return the global status writer.

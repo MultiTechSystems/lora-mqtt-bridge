@@ -351,8 +351,14 @@ class RemoteBrokerConfig:
             tls=TLSConfig.from_dict(tls_data) if tls_data else TLSConfig(),
             source_topic_format=_parse_topic_format(data.get("source_topic_format")),
             topics=TopicConfig.from_dict(topics_data) if topics_data else TopicConfig(),
-            message_filter=MessageFilterConfig.from_dict(message_filter_data) if message_filter_data else MessageFilterConfig(),
-            field_filter=FieldFilterConfig.from_dict(field_filter_data) if field_filter_data else FieldFilterConfig(),
+            message_filter=(
+                MessageFilterConfig.from_dict(message_filter_data)
+                if message_filter_data else MessageFilterConfig()
+            ),
+            field_filter=(
+                FieldFilterConfig.from_dict(field_filter_data)
+                if field_filter_data else FieldFilterConfig()
+            ),
             keepalive=data.get("keepalive", 60),
             clean_session=data.get("clean_session", False),
             qos=data.get("qos", 1),
@@ -428,7 +434,10 @@ class BridgeConfig:
         ]
 
         return cls(
-            local_broker=LocalBrokerConfig.from_dict(local_broker_data) if local_broker_data else LocalBrokerConfig(),
+            local_broker=(
+                LocalBrokerConfig.from_dict(local_broker_data)
+                if local_broker_data else LocalBrokerConfig()
+            ),
             remote_brokers=remote_brokers,
             log=LogConfig.from_dict(log_data) if log_data else LogConfig(),
             reconnect_delay=data.get("reconnect_delay", 1.0),

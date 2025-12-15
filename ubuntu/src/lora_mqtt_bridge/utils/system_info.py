@@ -38,7 +38,14 @@ def _format_uuid(uuid_raw: str) -> str:
         return uuid_raw.lower()
 
     # Format as 8-4-4-4-12
-    return f"{uuid_clean[:8]}-{uuid_clean[8:12]}-{uuid_clean[12:16]}-{uuid_clean[16:20]}-{uuid_clean[20:]}"
+    parts = [
+        uuid_clean[:8],
+        uuid_clean[8:12],
+        uuid_clean[12:16],
+        uuid_clean[16:20],
+        uuid_clean[20:],
+    ]
+    return "-".join(parts)
 
 
 @lru_cache(maxsize=1)
@@ -63,7 +70,7 @@ def get_gateway_uuid() -> str:
                     formatted = _format_uuid(uuid_raw)
                     logger.info("Got gateway UUID from %s: %s", path_str, formatted)
                     return formatted
-            except (OSError, IOError) as e:
+            except OSError as e:
                 logger.debug("Failed to read UUID from %s: %s", path_str, e)
 
     # Try mts-io-sysfs command

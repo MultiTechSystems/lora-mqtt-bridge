@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 
 class TopicFormat(str, Enum):
@@ -35,7 +35,7 @@ def _normalize_eui(eui: str) -> str:
     return eui.lower()
 
 
-def _normalize_eui_list(eui_list: List[str]) -> List[str]:
+def _normalize_eui_list(eui_list: list[str]) -> list[str]:
     """Normalize a list of EUI values.
 
     Args:
@@ -47,7 +47,7 @@ def _normalize_eui_list(eui_list: List[str]) -> List[str]:
     return [_normalize_eui(eui) for eui in eui_list]
 
 
-def _parse_topic_format(value: Any) -> List[TopicFormat]:
+def _parse_topic_format(value: Any) -> list[TopicFormat]:
     """Parse source_topic_format from various input types.
 
     Args:
@@ -110,7 +110,7 @@ class TopicConfig:
         return self.downlink_pattern
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TopicConfig":
+    def from_dict(cls, data: dict[str, Any]) -> TopicConfig:
         """Create TopicConfig from a dictionary.
 
         Args:
@@ -145,14 +145,14 @@ class LocalBrokerConfig:
 
     host: str = "127.0.0.1"
     port: int = 1883
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
     client_id: str = "lora-mqtt-bridge-local"
     topics: TopicConfig = field(default_factory=TopicConfig)
     keepalive: int = 60
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LocalBrokerConfig":
+    def from_dict(cls, data: dict[str, Any]) -> LocalBrokerConfig:
         """Create LocalBrokerConfig from a dictionary.
 
         Args:
@@ -187,15 +187,15 @@ class MessageFilterConfig:
         appeui_blacklist: List of AppEUI values to block.
     """
 
-    deveui_whitelist: List[str] = field(default_factory=list)
-    deveui_blacklist: List[str] = field(default_factory=list)
-    joineui_whitelist: List[str] = field(default_factory=list)
-    joineui_blacklist: List[str] = field(default_factory=list)
-    appeui_whitelist: List[str] = field(default_factory=list)
-    appeui_blacklist: List[str] = field(default_factory=list)
+    deveui_whitelist: list[str] = field(default_factory=list)
+    deveui_blacklist: list[str] = field(default_factory=list)
+    joineui_whitelist: list[str] = field(default_factory=list)
+    joineui_blacklist: list[str] = field(default_factory=list)
+    appeui_whitelist: list[str] = field(default_factory=list)
+    appeui_blacklist: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MessageFilterConfig":
+    def from_dict(cls, data: dict[str, Any]) -> MessageFilterConfig:
         """Create MessageFilterConfig from a dictionary.
 
         Args:
@@ -224,12 +224,12 @@ class FieldFilterConfig:
         always_include: Fields that are always included regardless of filters.
     """
 
-    include_fields: List[str] = field(default_factory=list)
-    exclude_fields: List[str] = field(default_factory=list)
-    always_include: List[str] = field(default_factory=lambda: ["deveui", "appeui", "time"])
+    include_fields: list[str] = field(default_factory=list)
+    exclude_fields: list[str] = field(default_factory=list)
+    always_include: list[str] = field(default_factory=lambda: ["deveui", "appeui", "time"])
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "FieldFilterConfig":
+    def from_dict(cls, data: dict[str, Any]) -> FieldFilterConfig:
         """Create FieldFilterConfig from a dictionary.
 
         Args:
@@ -259,14 +259,14 @@ class TLSConfig:
     """
 
     enabled: bool = False
-    ca_cert: Optional[str] = None
-    client_cert: Optional[str] = None
-    client_key: Optional[str] = None
+    ca_cert: str | None = None
+    client_cert: str | None = None
+    client_key: str | None = None
     verify_hostname: bool = True
     insecure: bool = False
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TLSConfig":
+    def from_dict(cls, data: dict[str, Any]) -> TLSConfig:
         """Create TLSConfig from a dictionary.
 
         Args:
@@ -312,11 +312,11 @@ class RemoteBrokerConfig:
     enabled: bool = True
     host: str = ""
     port: int = 1883
-    username: Optional[str] = None
-    password: Optional[str] = None
-    client_id: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
+    client_id: str | None = None
     tls: TLSConfig = field(default_factory=TLSConfig)
-    source_topic_format: List[TopicFormat] = field(default_factory=lambda: [TopicFormat.LORA])
+    source_topic_format: list[TopicFormat] = field(default_factory=lambda: [TopicFormat.LORA])
     topics: TopicConfig = field(default_factory=TopicConfig)
     message_filter: MessageFilterConfig = field(default_factory=MessageFilterConfig)
     field_filter: FieldFilterConfig = field(default_factory=FieldFilterConfig)
@@ -326,7 +326,7 @@ class RemoteBrokerConfig:
     retain: bool = True
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RemoteBrokerConfig":
+    def from_dict(cls, data: dict[str, Any]) -> RemoteBrokerConfig:
         """Create RemoteBrokerConfig from a dictionary.
 
         Args:
@@ -351,8 +351,14 @@ class RemoteBrokerConfig:
             tls=TLSConfig.from_dict(tls_data) if tls_data else TLSConfig(),
             source_topic_format=_parse_topic_format(data.get("source_topic_format")),
             topics=TopicConfig.from_dict(topics_data) if topics_data else TopicConfig(),
-            message_filter=MessageFilterConfig.from_dict(message_filter_data) if message_filter_data else MessageFilterConfig(),
-            field_filter=FieldFilterConfig.from_dict(field_filter_data) if field_filter_data else FieldFilterConfig(),
+            message_filter=(
+                MessageFilterConfig.from_dict(message_filter_data)
+                if message_filter_data else MessageFilterConfig()
+            ),
+            field_filter=(
+                FieldFilterConfig.from_dict(field_filter_data)
+                if field_filter_data else FieldFilterConfig()
+            ),
             keepalive=data.get("keepalive", 60),
             clean_session=data.get("clean_session", False),
             qos=data.get("qos", 1),
@@ -372,10 +378,10 @@ class LogConfig:
 
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file: Optional[str] = None
+    file: str | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LogConfig":
+    def from_dict(cls, data: dict[str, Any]) -> LogConfig:
         """Create LogConfig from a dictionary.
 
         Args:
@@ -404,13 +410,13 @@ class BridgeConfig:
     """
 
     local_broker: LocalBrokerConfig = field(default_factory=LocalBrokerConfig)
-    remote_brokers: List[RemoteBrokerConfig] = field(default_factory=list)
+    remote_brokers: list[RemoteBrokerConfig] = field(default_factory=list)
     log: LogConfig = field(default_factory=LogConfig)
     reconnect_delay: float = 1.0
     max_reconnect_delay: float = 60.0
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BridgeConfig":
+    def from_dict(cls, data: dict[str, Any]) -> BridgeConfig:
         """Create a BridgeConfig from a dictionary.
 
         Args:
@@ -428,7 +434,10 @@ class BridgeConfig:
         ]  # type: List[RemoteBrokerConfig]
 
         return cls(
-            local_broker=LocalBrokerConfig.from_dict(local_broker_data) if local_broker_data else LocalBrokerConfig(),
+            local_broker=(
+                LocalBrokerConfig.from_dict(local_broker_data)
+                if local_broker_data else LocalBrokerConfig()
+            ),
             remote_brokers=remote_brokers,
             log=LogConfig.from_dict(log_data) if log_data else LogConfig(),
             reconnect_delay=data.get("reconnect_delay", 1.0),
