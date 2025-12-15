@@ -184,7 +184,7 @@ class StatusWriter:
             info = app_info if app_info is not None else self._build_status_message()
 
             status_data = {
-                "pid": str(pid),
+                "pid": pid,
                 "AppInfo": info,
             }
 

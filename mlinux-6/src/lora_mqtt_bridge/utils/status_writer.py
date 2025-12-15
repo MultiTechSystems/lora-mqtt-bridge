@@ -4,7 +4,7 @@ This module provides functionality to write status.json files
 that are read by the mPower app-manager to display application
 status in the web UI and DeviceHQ.
 
-Compatible with Python 3.8+ and mLinux 6.3.5
+Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations
@@ -184,7 +184,7 @@ class StatusWriter:
             info = app_info if app_info is not None else self._build_status_message()
 
             status_data = {
-                "pid": str(pid),
+                "pid": pid,
                 "AppInfo": info,
             }
 
