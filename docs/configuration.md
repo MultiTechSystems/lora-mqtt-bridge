@@ -38,9 +38,9 @@ The LoRa MQTT Bridge can be configured using a JSON configuration file or enviro
         "verify_hostname": true,
         "insecure": false
       },
+      "source_topic_format": ["lora", "scada"],
       "topics": {
-        "format": "lora",
-        "uplink_pattern": "lorawan/%(appeui)s/%(deveui)s/up",
+        "uplink_pattern": "lorawan/%(gwuuid)s/%(appeui)s/%(deveui)s/up",
         "downlink_pattern": "lorawan/%(deveui)s/down"
       },
       "message_filter": {
@@ -100,6 +100,7 @@ Each remote broker can have the following configuration:
 | password | string | null | Authentication password |
 | client_id | string | auto-generated | MQTT client ID |
 | tls | object | - | TLS configuration |
+| source_topic_format | array | ["lora"] | Local topic formats to forward: "lora", "scada", or both |
 | topics | object | - | Topic configuration |
 | message_filter | object | - | Message filtering rules |
 | field_filter | object | - | Field filtering rules |
@@ -124,8 +125,10 @@ Each remote broker can have the following configuration:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | format | string | "lora" | Topic format: "lora" or "scada" |
-| uplink_pattern | string | "lora/+/+/up" | Uplink topic pattern |
+| uplink_pattern | string | "lora/+/+/up" | Uplink topic pattern (supports `%(gwuuid)s`, `%(deveui)s`, `%(appeui)s`, `%(joineui)s`, `%(gweui)s`) |
 | downlink_pattern | string | "lora/%s/down" | Downlink topic pattern |
+
+**Note:** The `%(gwuuid)s` variable is automatically populated with the gateway's UUID at runtime.
 
 ## Environment Variables
 
