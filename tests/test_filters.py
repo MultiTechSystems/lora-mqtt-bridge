@@ -184,8 +184,11 @@ class TestMessageFilter:
 
     def test_eui_normalization_in_filter(self) -> None:
         """Test EUI normalization during filtering."""
-        config = MessageFilterConfig(
-            deveui_whitelist=["0011223344556677"],  # Without dashes
+        # Use from_dict for EUI normalization (as done when loading config)
+        config = MessageFilterConfig.from_dict(
+            {
+                "deveui_whitelist": ["0011223344556677"],  # Without dashes
+            }
         )
         filter_obj = MessageFilter(config)
 
