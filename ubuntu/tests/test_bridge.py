@@ -188,9 +188,7 @@ class TestMQTTBridge:
 
         assert bridge._parse_message_type("lora/device/unknown") is None
 
-    def test_handle_local_message_invalid_json(
-        self, bridge_config: BridgeConfig
-    ) -> None:
+    def test_handle_local_message_invalid_json(self, bridge_config: BridgeConfig) -> None:
         """Test handling message with invalid JSON.
 
         Args:
@@ -201,9 +199,7 @@ class TestMQTTBridge:
         # Should not raise, just log error
         bridge._handle_local_message("lora/test/up", b"not valid json")
 
-    def test_handle_local_message_missing_deveui(
-        self, bridge_config: BridgeConfig
-    ) -> None:
+    def test_handle_local_message_missing_deveui(self, bridge_config: BridgeConfig) -> None:
         """Test handling message without deveui.
 
         Args:
@@ -253,11 +249,13 @@ class TestMQTTBridge:
         """
         bridge = MQTTBridge(bridge_config)
 
-        payload = json.dumps({
-            "deveui": "00-11-22-33-44-55-66-77",
-            "port": 1,
-            "data": "dGVzdA==",
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "deveui": "00-11-22-33-44-55-66-77",
+                "port": 1,
+                "data": "dGVzdA==",
+            }
+        ).encode("utf-8")
 
         bridge._handle_remote_message("lorawan/test/down", payload)
 
@@ -279,9 +277,11 @@ class TestMQTTBridge:
         """
         bridge = MQTTBridge(bridge_config)
 
-        payload = json.dumps({
-            "deveui": "00-11-22-33-44-55-66-77",
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "deveui": "00-11-22-33-44-55-66-77",
+            }
+        ).encode("utf-8")
 
         bridge._handle_remote_message("lorawan/test/clear", payload)
 
@@ -309,9 +309,7 @@ class TestMQTTBridgeDynamicBrokers:
 
         assert "new-broker" in bridge.remote_clients
 
-    def test_add_duplicate_broker_ignored(
-        self, bridge_config: BridgeConfig
-    ) -> None:
+    def test_add_duplicate_broker_ignored(self, bridge_config: BridgeConfig) -> None:
         """Test that duplicate broker names are ignored.
 
         Args:

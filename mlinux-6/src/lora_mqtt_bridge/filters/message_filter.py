@@ -56,7 +56,7 @@ class MessageFilter:
             return None
         clean = eui.replace(":", "").replace("-", "").lower()
         if len(clean) == 16:
-            return "-".join([clean[i:i + 2] for i in range(0, 16, 2)])
+            return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
         return eui.lower()
 
     def _check_whitelist(

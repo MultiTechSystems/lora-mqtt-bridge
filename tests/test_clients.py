@@ -122,9 +122,7 @@ class TestRemoteMQTTClient:
         assert client.port == 8883
         assert client.is_connected is False
 
-    def test_message_filter_initialized(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_message_filter_initialized(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test that message filter is initialized.
 
         Args:
@@ -133,9 +131,7 @@ class TestRemoteMQTTClient:
         client = RemoteMQTTClient(remote_broker_config)
         assert client.message_filter is not None
 
-    def test_field_filter_initialized(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_field_filter_initialized(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test that field filter is initialized.
 
         Args:
@@ -144,9 +140,7 @@ class TestRemoteMQTTClient:
         client = RemoteMQTTClient(remote_broker_config)
         assert client.field_filter is not None
 
-    def test_forward_message_filtered_out(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_forward_message_filtered_out(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test that filtered messages are not forwarded.
 
         Args:
@@ -235,9 +229,7 @@ class TestRemoteMQTTClient:
         assert "00-11-22-33-44-55-66-77" in topic
         assert topic.endswith("/up")
 
-    def test_handle_downlink_valid(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_handle_downlink_valid(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test handling valid downlink message.
 
         Args:
@@ -245,11 +237,13 @@ class TestRemoteMQTTClient:
         """
         client = RemoteMQTTClient(remote_broker_config)
 
-        payload = json.dumps({
-            "deveui": "00-11-22-33-44-55-66-77",
-            "port": 1,
-            "data": "dGVzdA==",
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "deveui": "00-11-22-33-44-55-66-77",
+                "port": 1,
+                "data": "dGVzdA==",
+            }
+        ).encode("utf-8")
 
         result = client.handle_downlink("test/down", payload)
 
@@ -257,9 +251,7 @@ class TestRemoteMQTTClient:
         assert result["deveui"] == "00-11-22-33-44-55-66-77"
         assert result["port"] == 1
 
-    def test_handle_downlink_missing_deveui(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_handle_downlink_missing_deveui(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test handling downlink without deveui.
 
         Args:
@@ -273,9 +265,7 @@ class TestRemoteMQTTClient:
 
         assert result is None
 
-    def test_handle_downlink_invalid_json(
-        self, remote_broker_config: RemoteBrokerConfig
-    ) -> None:
+    def test_handle_downlink_invalid_json(self, remote_broker_config: RemoteBrokerConfig) -> None:
         """Test handling downlink with invalid JSON.
 
         Args:

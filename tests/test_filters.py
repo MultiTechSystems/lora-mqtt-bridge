@@ -266,9 +266,7 @@ class TestFieldFilter:
         # Other fields should be excluded
         assert "rssi" not in result
 
-    def test_exclude_with_always_include(
-        self, sample_uplink_payload: dict[str, Any]
-    ) -> None:
+    def test_exclude_with_always_include(self, sample_uplink_payload: dict[str, Any]) -> None:
         """Test that always-include overrides exclude.
 
         Args:

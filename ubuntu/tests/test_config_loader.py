@@ -40,9 +40,7 @@ class TestLoadConfig:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_data, f)
             temp_path = f.name
 
@@ -61,9 +59,7 @@ class TestLoadConfig:
 
     def test_load_invalid_json(self) -> None:
         """Test loading a file with invalid JSON."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("not valid json")
             temp_path = f.name
 
@@ -114,9 +110,7 @@ class TestLoadConfig:
             },
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_data, f)
             temp_path = f.name
 
@@ -202,10 +196,12 @@ class TestLoadConfigFromEnv:
         Args:
             monkeypatch: Pytest monkeypatch fixture.
         """
-        brokers_json = json.dumps([
-            {"name": "broker1", "host": "broker1.example.com"},
-            {"name": "broker2", "host": "broker2.example.com", "port": 8884},
-        ])
+        brokers_json = json.dumps(
+            [
+                {"name": "broker1", "host": "broker1.example.com"},
+                {"name": "broker2", "host": "broker2.example.com", "port": 8884},
+            ]
+        )
         monkeypatch.setenv("LORA_MQTT_BRIDGE_REMOTE_BROKERS", brokers_json)
 
         config = load_config_from_env()

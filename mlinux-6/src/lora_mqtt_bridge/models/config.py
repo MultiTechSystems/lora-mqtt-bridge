@@ -353,11 +353,13 @@ class RemoteBrokerConfig:
             topics=TopicConfig.from_dict(topics_data) if topics_data else TopicConfig(),
             message_filter=(
                 MessageFilterConfig.from_dict(message_filter_data)
-                if message_filter_data else MessageFilterConfig()
+                if message_filter_data
+                else MessageFilterConfig()
             ),
             field_filter=(
                 FieldFilterConfig.from_dict(field_filter_data)
-                if field_filter_data else FieldFilterConfig()
+                if field_filter_data
+                else FieldFilterConfig()
             ),
             keepalive=data.get("keepalive", 60),
             clean_session=data.get("clean_session", False),
@@ -429,14 +431,13 @@ class BridgeConfig:
         remote_brokers_data = data.get("remote_brokers", [])
         log_data = data.get("log", {})
 
-        remote_brokers = [
-            RemoteBrokerConfig.from_dict(rb) for rb in remote_brokers_data
-        ]  # type: List[RemoteBrokerConfig]
+        remote_brokers = [RemoteBrokerConfig.from_dict(rb) for rb in remote_brokers_data]  # type: List[RemoteBrokerConfig]
 
         return cls(
             local_broker=(
                 LocalBrokerConfig.from_dict(local_broker_data)
-                if local_broker_data else LocalBrokerConfig()
+                if local_broker_data
+                else LocalBrokerConfig()
             ),
             remote_brokers=remote_brokers,
             log=LogConfig.from_dict(log_data) if log_data else LogConfig(),

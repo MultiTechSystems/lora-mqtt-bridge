@@ -101,8 +101,7 @@ def load_config_from_env() -> BridgeConfig:
         port=get_env_int("LOCAL_PORT", 1883),
         username=get_env("LOCAL_USERNAME"),
         password=get_env("LOCAL_PASSWORD"),
-        client_id=get_env("LOCAL_CLIENT_ID", "lora-mqtt-bridge-local")
-        or "lora-mqtt-bridge-local",
+        client_id=get_env("LOCAL_CLIENT_ID", "lora-mqtt-bridge-local") or "lora-mqtt-bridge-local",
         topics=local_topics,
         keepalive=get_env_int("LOCAL_KEEPALIVE", 60),
     )

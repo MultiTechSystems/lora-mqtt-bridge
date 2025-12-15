@@ -41,7 +41,7 @@ def _normalize_eui(eui: str | int | None) -> str | None:
     # Remove colons and convert to lowercase with dashes
     clean = eui.replace(":", "").replace("-", "").lower()
     if len(clean) == 16:
-        return "-".join([clean[i:i + 2] for i in range(0, 16, 2)])
+        return "-".join([clean[i : i + 2] for i in range(0, 16, 2)])
     return eui.lower()
 
 
