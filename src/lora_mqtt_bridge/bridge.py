@@ -16,6 +16,7 @@ from lora_mqtt_bridge.clients.local import LocalMQTTClient
 from lora_mqtt_bridge.clients.remote import RemoteMQTTClient
 from lora_mqtt_bridge.models.config import TopicFormat
 from lora_mqtt_bridge.models.message import LoRaMessage, MessageType
+from lora_mqtt_bridge.utils.status_writer import get_status_writer
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import BridgeConfig
@@ -67,12 +68,17 @@ class MQTTBridge:
         logger.info("Starting MQTT bridge")
         self._running = True
 
+        # Get status writer
+        status_writer = get_status_writer()
+
         # Connect to local broker
         try:
             self.local_client.connect()
             logger.info("Connected to local broker")
+            status_writer.set_local_connected(True)
         except Exception:
             logger.exception("Failed to connect to local broker")
+            status_writer.set_local_connected(False)
             raise
 
         # Connect to remote brokers
@@ -80,8 +86,10 @@ class MQTTBridge:
             try:
                 client.connect()
                 logger.info("Connected to remote broker: %s", name)
+                status_writer.set_remote_connected(name, True)
             except Exception:
                 logger.exception("Failed to connect to remote broker: %s", name)
+                status_writer.set_remote_connected(name, False)
                 # Continue with other brokers
 
         logger.info("MQTT bridge started with %d remote brokers", len(self.remote_clients))
@@ -203,6 +211,7 @@ class MQTTBridge:
 
         # Forward to remote brokers that are configured to receive this topic format
         forwarded_count = 0
+        status_writer = get_status_writer()
         for name, client in self.remote_clients.items():
             # Check if this remote broker wants this source topic format
             if source_format not in client.config.source_topic_format:
@@ -217,6 +226,7 @@ class MQTTBridge:
 
             if client.forward_message(message):
                 forwarded_count += 1
+                status_writer.increment_message_count()
 
         logger.debug(
             "Message from %s (%s) forwarded to %d/%d remote brokers",

@@ -3,6 +3,8 @@
 
 This module provides the main entry point and CLI interface
 for the MQTT bridge application.
+
+Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from lora_mqtt_bridge import __version__
 from lora_mqtt_bridge.bridge import MQTTBridge
 from lora_mqtt_bridge.utils.config_loader import load_config, load_config_from_env
 from lora_mqtt_bridge.utils.logging_setup import setup_logging
+from lora_mqtt_bridge.utils.status_writer import init_status_writer
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import BridgeConfig
@@ -205,16 +208,26 @@ def main() -> int:
         logger.error("Invalid configuration")
         return 1
 
+    # Initialize and start status writer
+    status_writer = init_status_writer()
+    status_writer.start()
+    status_writer.write_immediate("Starting...")
+
     # Create and run bridge
     bridge = MQTTBridge(config)
 
     try:
+        status_writer.write_immediate("Running")
         bridge.run()
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
+        status_writer.write_immediate("Stopped by user")
     except Exception:
         logger.exception("Unexpected error")
+        status_writer.write_immediate("Error - check logs")
         return 1
+    finally:
+        status_writer.stop()
 
     logger.info("LoRa MQTT Bridge stopped")
     return 0

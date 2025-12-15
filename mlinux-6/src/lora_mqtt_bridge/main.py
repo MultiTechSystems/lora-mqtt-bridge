@@ -13,12 +13,13 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from lora_mqtt_bridge import __version__
 from lora_mqtt_bridge.bridge import MQTTBridge
 from lora_mqtt_bridge.utils.config_loader import load_config, load_config_from_env
 from lora_mqtt_bridge.utils.logging_setup import setup_logging
+from lora_mqtt_bridge.utils.status_writer import init_status_writer
 
 if TYPE_CHECKING:
     from lora_mqtt_bridge.models.config import BridgeConfig
@@ -105,7 +106,7 @@ def load_configuration(args: argparse.Namespace) -> BridgeConfig:
             sys.exit(1)
 
         try:
-            config = load_config(str(config_path))
+            config = load_config(config_path)
             logger.info("Loaded configuration from %s", config_path)
         except Exception as e:
             logger.error("Failed to load configuration: %s", e)
@@ -130,7 +131,7 @@ def load_configuration(args: argparse.Namespace) -> BridgeConfig:
         for path in default_paths:
             if path.exists():
                 try:
-                    config = load_config(str(path))
+                    config = load_config(path)
                     logger.info("Loaded configuration from %s", path)
                     break
                 except Exception:
@@ -207,16 +208,26 @@ def main() -> int:
         logger.error("Invalid configuration")
         return 1
 
+    # Initialize and start status writer
+    status_writer = init_status_writer()
+    status_writer.start()
+    status_writer.write_immediate("Starting...")
+
     # Create and run bridge
     bridge = MQTTBridge(config)
 
     try:
+        status_writer.write_immediate("Running")
         bridge.run()
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
+        status_writer.write_immediate("Stopped by user")
     except Exception:
         logger.exception("Unexpected error")
+        status_writer.write_immediate("Error - check logs")
         return 1
+    finally:
+        status_writer.stop()
 
     logger.info("LoRa MQTT Bridge stopped")
     return 0
