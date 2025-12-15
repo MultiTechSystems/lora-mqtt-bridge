@@ -8,7 +8,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="$SCRIPT_DIR/dist"
 SRC_DIR="$SCRIPT_DIR/src"
-VERSION="1.0.0"
+
+# Get version from git tag, fallback to 1.0.0
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
 TARBALL_NAME="lora_mqtt_bridge-${VERSION}-mlinux7.tar.gz"
 BUILD_DIR="$SCRIPT_DIR/build"
 
