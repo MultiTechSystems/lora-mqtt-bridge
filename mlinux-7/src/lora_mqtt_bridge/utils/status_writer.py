@@ -42,7 +42,7 @@ class StatusWriter:
             app_dir: Application directory path. If None, uses APP_DIR env var.
             update_interval: Interval in seconds between automatic status updates.
         """
-        self.app_dir = app_dir or os.getenv("APP_DIR", ".")
+        self.app_dir = app_dir if app_dir else (os.getenv("APP_DIR") or ".")
         self.status_file = os.path.join(self.app_dir, "status.json")
         self.update_interval = update_interval
 
