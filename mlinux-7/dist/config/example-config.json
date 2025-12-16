@@ -1,0 +1,135 @@
+{
+  "local_broker": {
+    "host": "127.0.0.1",
+    "port": 1883,
+    "username": null,
+    "password": null,
+    "client_id": "lora-mqtt-bridge-local",
+    "keepalive": 60
+  },
+  "remote_brokers": [
+    {
+      "name": "cloud-lora",
+      "enabled": true,
+      "host": "mqtt.cloud.example.com",
+      "port": 8883,
+      "username": "gateway-user",
+      "password": "gateway-password",
+      "client_id": "gateway-001-lora",
+      "tls": {
+        "enabled": true,
+        "ca_cert": null,
+        "client_cert": null,
+        "client_key": null,
+        "verify_hostname": true,
+        "insecure": false
+      },
+      "source_topic_format": ["lora"],
+      "topics": {
+        "format": "lora",
+        "uplink_pattern": "lorawan/%(appeui)s/%(deveui)s/up",
+        "downlink_pattern": "lorawan/%(deveui)s/down"
+      },
+      "message_filter": {
+        "deveui_whitelist": [],
+        "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": [],
+        "joineui_whitelist": [],
+        "joineui_blacklist": [],
+        "joineui_ranges": [],
+        "joineui_masks": [],
+        "appeui_whitelist": [],
+        "appeui_blacklist": [],
+        "appeui_ranges": [],
+        "appeui_masks": []
+      },
+      "field_filter": {
+        "include_fields": [],
+        "exclude_fields": [],
+        "always_include": ["deveui", "appeui", "time"]
+      },
+      "keepalive": 60,
+      "clean_session": false,
+      "qos": 1,
+      "retain": true
+    },
+    {
+      "name": "cloud-scada",
+      "enabled": true,
+      "host": "mqtt.cloud.example.com",
+      "port": 8883,
+      "username": "gateway-user",
+      "password": "gateway-password",
+      "client_id": "gateway-001-scada",
+      "tls": {
+        "enabled": true,
+        "ca_cert": null,
+        "client_cert": null,
+        "client_key": null,
+        "verify_hostname": true,
+        "insecure": false
+      },
+      "source_topic_format": ["scada"],
+      "topics": {
+        "format": "scada",
+        "uplink_pattern": "scada/%(deveui)s/up",
+        "downlink_pattern": "scada/%(deveui)s/down"
+      },
+      "message_filter": {
+        "deveui_whitelist": [],
+        "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": []
+      },
+      "field_filter": {
+        "include_fields": [],
+        "exclude_fields": [],
+        "always_include": ["deveui", "time"]
+      },
+      "keepalive": 60,
+      "clean_session": false,
+      "qos": 1,
+      "retain": true
+    },
+    {
+      "name": "analytics-all",
+      "enabled": true,
+      "host": "analytics.example.com",
+      "port": 1883,
+      "username": null,
+      "password": null,
+      "client_id": null,
+      "tls": {
+        "enabled": false
+      },
+      "source_topic_format": ["lora", "scada"],
+      "topics": {
+        "format": "lora",
+        "uplink_pattern": "devices/%(deveui)s/data",
+        "downlink_pattern": "devices/%s/command"
+      },
+      "message_filter": {
+        "deveui_whitelist": [],
+        "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": []
+      },
+      "field_filter": {
+        "include_fields": ["deveui", "time", "port", "data", "fcnt"],
+        "exclude_fields": []
+      },
+      "keepalive": 60,
+      "clean_session": false,
+      "qos": 0,
+      "retain": false
+    }
+  ],
+  "log": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": null
+  },
+  "reconnect_delay": 1.0,
+  "max_reconnect_delay": 60.0
+}

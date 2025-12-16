@@ -3,8 +3,6 @@
 This package provides functionality to bridge MQTT messages from a local
 LoRaWAN gateway broker to multiple remote MQTT brokers with filtering
 and field selection capabilities.
-
-Compatible with mLinux 7.1.0 (Python 3.10, paho-mqtt 1.6.x)
 """
 
 from lora_mqtt_bridge.bridge import MQTTBridge

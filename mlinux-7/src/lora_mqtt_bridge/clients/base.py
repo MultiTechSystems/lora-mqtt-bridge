@@ -2,8 +2,6 @@
 
 This module provides the abstract base class for MQTT client implementations
 used in the LoRa MQTT Bridge.
-
-Compatible with Python 3.10+ and paho-mqtt 1.6.x (mLinux 7.1.0)
 """
 
 from __future__ import annotations
@@ -15,9 +13,13 @@ import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import paho.mqtt.client as mqtt
+
+if TYPE_CHECKING:
+    from paho.mqtt.client import MQTTMessage
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,18 +97,27 @@ class BaseMQTTClient(ABC):
         Returns:
             A configured paho MQTT client instance.
         """
-        # paho-mqtt 1.6.x API
-        client = mqtt.Client(
-            client_id=self.client_id,
-            clean_session=self.clean_session,
-            userdata={"name": self.name},
-        )
+        # Try paho-mqtt 2.x API first, fall back to 1.x
+        try:
+            client = mqtt.Client(
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,  # type: ignore[call-arg, attr-defined]
+                client_id=self.client_id,
+                clean_session=self.clean_session,
+                userdata={"name": self.name},
+            )
+        except (TypeError, AttributeError):
+            # paho-mqtt 1.x compatibility
+            client = mqtt.Client(
+                client_id=self.client_id,
+                clean_session=self.clean_session,
+                userdata={"name": self.name},
+            )
 
         # Set up authentication
-        if self.username or self.password:
+        if self.username:
             client.username_pw_set(self.username, self.password)
 
-        # Set up callbacks (paho-mqtt 1.6.x callback signatures)
+        # Set up callbacks
         client.on_connect = self._on_connect
         client.on_disconnect = self._on_disconnect
         client.on_message = self._on_message
@@ -145,15 +156,13 @@ class BaseMQTTClient(ABC):
             if not Path(ca_file).exists():
                 ca_file = "/etc/ssl/certs/ca-certificates.crt"
 
-        cert_reqs = ssl.CERT_REQUIRED if ca_cert else ssl.CERT_NONE
-
         try:
             self._client.tls_set(
                 ca_certs=ca_file,
                 certfile=cert_file,
                 keyfile=key_file,
-                cert_reqs=cert_reqs,
-                tls_version=ssl.PROTOCOL_TLSv1_2,
+                cert_reqs=ssl.CERT_REQUIRED if ca_cert else ssl.CERT_NONE,
+                tls_version=ssl.PROTOCOL_TLS_CLIENT,
             )
             self._client.tls_insecure_set(insecure or not verify_hostname)
             logger.info("TLS configured for client %s", self.name)
@@ -223,8 +232,7 @@ class BaseMQTTClient(ABC):
         # Clean up temporary certificate files
         for temp_file in self._temp_files:
             try:
-                if temp_file.exists():
-                    temp_file.unlink()
+                temp_file.unlink(missing_ok=True)
             except Exception:
                 pass
         self._temp_files.clear()
@@ -262,8 +270,7 @@ class BaseMQTTClient(ABC):
 
         with self._lock:
             self._client.publish(topic, payload, qos, retain)
-            log_payload = str(payload)[:100] if payload else None
-            logger.debug("Published to %s: %s", topic, log_payload)
+            logger.debug("Published to %s: %s", topic, payload[:100] if payload else None)
 
     def add_message_callback(self, callback: MessageCallback) -> None:
         """Add a callback for received messages.
@@ -287,53 +294,61 @@ class BaseMQTTClient(ABC):
         client: mqtt.Client,
         userdata: dict[str, Any],
         flags: dict[str, Any],
-        rc: int,
+        reason_code: Any,
+        properties: Any = None,
     ) -> None:
-        """Handle connection events (paho-mqtt 1.6.x callback signature).
+        """Handle connection events.
 
         Args:
             client: The MQTT client instance.
             userdata: User data attached to the client.
             flags: Connection flags.
-            rc: The connection result code.
+            reason_code: The connection reason code.
+            properties: MQTT v5 properties.
         """
-        if rc == 0:
+        if reason_code == 0:
             self._connected = True
             logger.info("Connected to %s successfully", self.name)
             self._on_connected()
         else:
-            logger.error("Connection to %s failed with code: %d", self.name, rc)
+            logger.error("Connection to %s failed: %s", self.name, reason_code)
 
     def _on_disconnect(
         self,
         client: mqtt.Client,
         userdata: dict[str, Any],
-        rc: int,
+        disconnect_flags: Any,
+        reason_code: Any,
+        properties: Any = None,
     ) -> None:
-        """Handle disconnection events (paho-mqtt 1.6.x callback signature).
+        """Handle disconnection events.
 
         Args:
             client: The MQTT client instance.
             userdata: User data attached to the client.
-            rc: The disconnect reason code.
+            disconnect_flags: Disconnect flags.
+            reason_code: The disconnect reason code.
+            properties: MQTT v5 properties.
         """
         self._connected = False
-        logger.warning("Disconnected from %s with code: %d", self.name, rc)
+        logger.warning("Disconnected from %s: %s", self.name, reason_code)
 
     def _on_subscribe(
         self,
         client: mqtt.Client,
         userdata: dict[str, Any],
         mid: int,
-        granted_qos: Any,
+        reason_codes: Any,
+        properties: Any = None,
     ) -> None:
-        """Handle subscription acknowledgments (paho-mqtt 1.6.x callback signature).
+        """Handle subscription acknowledgments.
 
         Args:
             client: The MQTT client instance.
             userdata: User data attached to the client.
             mid: The message ID.
-            granted_qos: The granted QoS levels.
+            reason_codes: The subscription reason codes.
+            properties: MQTT v5 properties.
         """
         logger.debug("Subscription acknowledged for %s: mid=%d", self.name, mid)
 
@@ -341,9 +356,9 @@ class BaseMQTTClient(ABC):
         self,
         client: mqtt.Client,
         userdata: dict[str, Any],
-        msg: mqtt.MQTTMessage,
+        msg: MQTTMessage,
     ) -> None:
-        """Handle received messages (paho-mqtt 1.6.x callback signature).
+        """Handle received messages.
 
         Args:
             client: The MQTT client instance.

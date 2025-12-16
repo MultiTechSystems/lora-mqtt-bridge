@@ -2,8 +2,6 @@
 
 This module provides functions for loading configuration from
 various sources including files, environment variables, and dictionaries.
-
-Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations

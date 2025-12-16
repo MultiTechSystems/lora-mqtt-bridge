@@ -4,7 +4,7 @@
 This module provides the main entry point and CLI interface
 for the MQTT bridge application.
 
-Compatible with Python 3.8+ (mLinux 6.3.5)
+Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from lora_mqtt_bridge import __version__
 from lora_mqtt_bridge.bridge import MQTTBridge
@@ -97,7 +97,7 @@ def load_configuration(args: argparse.Namespace) -> BridgeConfig:
     Raises:
         SystemExit: If configuration cannot be loaded.
     """
-    config = None  # type: Optional[BridgeConfig]
+    config: BridgeConfig | None = None
 
     if args.config:
         config_path = Path(args.config)

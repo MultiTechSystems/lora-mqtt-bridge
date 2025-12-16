@@ -3,7 +3,7 @@
 This module provides the MQTT client implementation for connecting
 to remote MQTT brokers with filtering capabilities.
 
-Compatible with Python 3.8+ and paho-mqtt 1.6.x (mLinux 6.3.5)
+Compatible with Python 3.10+ and paho-mqtt 1.6.x (mLinux 7.1.0)
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ class RemoteMQTTClient(BaseMQTTClient):
         self.field_filter = FieldFilter(config.field_filter)
 
         # Queue for messages while disconnected
-        self._message_queue = []  # type: List[Tuple[str, str]]
+        self._message_queue: list[tuple[str, str]] = []
         self._max_queue_size = 10000
 
     def connect(self) -> None:
@@ -149,18 +149,18 @@ class RemoteMQTTClient(BaseMQTTClient):
 
         if "%" in pattern:
             # Use format-style replacement
-            format_dict = {
+            format_dict: dict[str, Any] = {
                 "deveui": message.deveui or "",
                 "appeui": message.appeui or "",
                 "joineui": message.get_effective_joineui() or "",
                 "gweui": message.gweui or "",
                 "gwuuid": get_gateway_uuid(),
-            }  # type: Dict[str, Any]
+            }
             return pattern % format_dict
         else:
             # Replace + wildcards with actual values
             parts = pattern.split("/")
-            result_parts = []
+            result_parts: list[str] = []
             for part in parts:
                 if part == "+":
                     # Try to substitute with deveui, then appeui
@@ -219,7 +219,7 @@ class RemoteMQTTClient(BaseMQTTClient):
                 data.get("deveui"),
                 self.name,
             )
-            return data
+            return dict(data)
         except json.JSONDecodeError:
             logger.error("Failed to parse downlink payload as JSON")
             return None

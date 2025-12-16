@@ -160,7 +160,7 @@ class RemoteMQTTClient(BaseMQTTClient):
         else:
             # Replace + wildcards with actual values
             parts = pattern.split("/")
-            result_parts = []
+            result_parts: list[str] = []
             for part in parts:
                 if part == "+":
                     # Try to substitute with deveui, then appeui
@@ -219,7 +219,7 @@ class RemoteMQTTClient(BaseMQTTClient):
                 data.get("deveui"),
                 self.name,
             )
-            return data
+            return dict(data)
         except json.JSONDecodeError:
             logger.error("Failed to parse downlink payload as JSON")
             return None

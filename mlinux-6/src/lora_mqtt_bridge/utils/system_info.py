@@ -2,8 +2,6 @@
 
 This module provides functions for retrieving system information
 such as the gateway UUID.
-
-Compatible with Python 3.8+ (mLinux 6.3.5)
 """
 
 from __future__ import annotations
@@ -19,7 +17,7 @@ logger = logging.getLogger(__name__)
 UUID_PATHS = [
     "/sys/devices/platform/mts-io/uuid",
     "/sys/class/dmi/id/product_uuid",
-]  # type: List[str]
+]
 
 
 def _format_uuid(uuid_raw: str) -> str:

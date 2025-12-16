@@ -2,8 +2,6 @@
 
 This module provides functions for loading configuration from
 various sources including files, environment variables, and dictionaries.
-
-Compatible with Python 3.8+ (mLinux 6.3.5)
 """
 
 from __future__ import annotations
@@ -28,7 +26,7 @@ from lora_mqtt_bridge.models.config import (
 logger = logging.getLogger(__name__)
 
 
-def load_config(config_path: str) -> BridgeConfig:
+def load_config(config_path: str | Path) -> BridgeConfig:
     """Load configuration from a JSON file.
 
     Args:
@@ -109,7 +107,7 @@ def load_config_from_env() -> BridgeConfig:
     )
 
     # Build remote broker configs from JSON env var
-    remote_brokers = []  # type: List[RemoteBrokerConfig]
+    remote_brokers: list[RemoteBrokerConfig] = []
     remote_config_json = get_env("REMOTE_BROKERS")
 
     if remote_config_json:

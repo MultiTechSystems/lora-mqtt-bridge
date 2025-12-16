@@ -3,7 +3,7 @@
 This module defines data models for LoRaWAN messages including
 uplinks, downlinks, and join events.
 
-Compatible with Python 3.8+ (mLinux 6.3.5)
+Compatible with Python 3.10+ and mLinux 7.1.0
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ class LoRaMessage:
         always_include = always_include or ["deveui", "appeui", "time"]
         exclude_fields = exclude_fields or []
 
-        result = {}  # type: Dict[str, Any]
+        result: dict[str, Any] = {}
         source = self.raw_data if self.raw_data else self._to_dict()
 
         for key, value in source.items():
@@ -181,7 +181,7 @@ class LoRaMessage:
         Returns:
             Dictionary representation.
         """
-        result = {}  # type: Dict[str, Any]
+        result: dict[str, Any] = {}
         if self.deveui:
             result["deveui"] = self.deveui
         if self.appeui:

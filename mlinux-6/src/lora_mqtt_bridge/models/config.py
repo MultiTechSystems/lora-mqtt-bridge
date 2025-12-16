@@ -3,7 +3,7 @@
 This module defines configuration classes for the MQTT bridge,
 including local broker settings, remote broker settings, and filtering options.
 
-Compatible with Python 3.8+ without external dependencies (no pydantic).
+Compatible with Python 3.10+ without external dependencies (no pydantic).
 """
 
 from __future__ import annotations
@@ -47,6 +47,166 @@ def _normalize_eui_list(eui_list: list[str]) -> list[str]:
     return [_normalize_eui(eui) for eui in eui_list]
 
 
+def _eui_to_int(eui: str) -> int:
+    """Convert a normalized EUI string to an integer for range comparison.
+
+    Args:
+        eui: The normalized EUI string (e.g., "00-11-22-33-44-55-66-77").
+
+    Returns:
+        The integer representation of the EUI.
+    """
+    clean = eui.replace("-", "").replace(":", "").lower()
+    return int(clean, 16)
+
+
+def _parse_eui_range(range_spec: list[str]) -> tuple[int, int]:
+    """Parse a [min, max] EUI range specification.
+
+    Args:
+        range_spec: A list of two EUI strings [min_eui, max_eui].
+
+    Returns:
+        A tuple of (min_int, max_int) for range comparison.
+
+    Raises:
+        ValueError: If the range specification is invalid.
+    """
+    if len(range_spec) != 2:
+        raise ValueError("EUI range must have exactly 2 elements [min, max]")
+    min_eui = _normalize_eui(range_spec[0])
+    max_eui = _normalize_eui(range_spec[1])
+    return (_eui_to_int(min_eui), _eui_to_int(max_eui))
+
+
+def _parse_eui_mask(mask_spec: str) -> tuple[str, str]:
+    """Parse an EUI mask specification.
+
+    A mask uses 'x' or 'X' as wildcards for any hex digit.
+    Example: "00-11-22-xx-xx-xx-xx-xx" matches any device starting with 00-11-22.
+
+    Args:
+        mask_spec: The mask specification string.
+
+    Returns:
+        A tuple of (pattern, mask) where pattern is the normalized pattern
+        with wildcards replaced by '0' and mask indicates which positions matter.
+    """
+    normalized = _normalize_eui(mask_spec.lower())
+    # Build a pattern and mask
+    pattern_chars = []
+    mask_chars = []
+    for char in normalized:
+        if char == 'x':
+            pattern_chars.append('0')
+            mask_chars.append('0')
+        elif char == '-':
+            pattern_chars.append('-')
+            mask_chars.append('-')
+        else:
+            pattern_chars.append(char)
+            mask_chars.append('f')
+    return (''.join(pattern_chars), ''.join(mask_chars))
+
+
+@dataclass
+class EUIRange:
+    """Represents an EUI range for filtering.
+
+    Attributes:
+        min_eui: The minimum EUI in the range (inclusive).
+        max_eui: The maximum EUI in the range (inclusive).
+        min_int: The integer representation of min_eui.
+        max_int: The integer representation of max_eui.
+    """
+
+    min_eui: str
+    max_eui: str
+    min_int: int = field(init=False)
+    max_int: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Calculate integer representations after initialization."""
+        self.min_eui = _normalize_eui(self.min_eui)
+        self.max_eui = _normalize_eui(self.max_eui)
+        self.min_int = _eui_to_int(self.min_eui)
+        self.max_int = _eui_to_int(self.max_eui)
+
+    def contains(self, eui: str) -> bool:
+        """Check if an EUI falls within this range.
+
+        Args:
+            eui: The EUI to check.
+
+        Returns:
+            True if the EUI is within the range, False otherwise.
+        """
+        eui_int = _eui_to_int(_normalize_eui(eui))
+        return self.min_int <= eui_int <= self.max_int
+
+    @classmethod
+    def from_list(cls, range_spec: list[str]) -> EUIRange:
+        """Create an EUIRange from a [min, max] list.
+
+        Args:
+            range_spec: A list of two EUI strings.
+
+        Returns:
+            An EUIRange instance.
+        """
+        if len(range_spec) != 2:
+            raise ValueError("EUI range must have exactly 2 elements [min, max]")
+        return cls(min_eui=range_spec[0], max_eui=range_spec[1])
+
+
+@dataclass
+class EUIMask:
+    """Represents an EUI mask pattern for filtering.
+
+    Uses 'x' or 'X' as wildcards for any hex digit.
+    Example: "00-11-22-xx-xx-xx-xx-xx" matches any device starting with 00-11-22.
+
+    Attributes:
+        pattern: The original mask pattern.
+        mask_int: The integer mask (bits set where pattern is specific).
+        pattern_int: The pattern value with wildcards as 0.
+    """
+
+    pattern: str
+    mask_int: int = field(init=False)
+    pattern_int: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Calculate mask values after initialization."""
+        pattern_str, mask_str = _parse_eui_mask(self.pattern)
+        self.pattern_int = _eui_to_int(pattern_str)
+        self.mask_int = _eui_to_int(mask_str)
+
+    def matches(self, eui: str) -> bool:
+        """Check if an EUI matches this mask pattern.
+
+        Args:
+            eui: The EUI to check.
+
+        Returns:
+            True if the EUI matches the mask pattern, False otherwise.
+        """
+        eui_int = _eui_to_int(_normalize_eui(eui))
+        return (eui_int & self.mask_int) == (self.pattern_int & self.mask_int)
+
+    @classmethod
+    def from_string(cls, mask_spec: str) -> EUIMask:
+        """Create an EUIMask from a mask specification string.
+
+        Args:
+            mask_spec: The mask pattern (e.g., "00-11-22-xx-xx-xx-xx-xx").
+
+        Returns:
+            An EUIMask instance.
+        """
+        return cls(pattern=mask_spec)
+
+
 def _parse_topic_format(value: Any) -> list[TopicFormat]:
     """Parse source_topic_format from various input types.
 
@@ -63,7 +223,7 @@ def _parse_topic_format(value: Any) -> list[TopicFormat]:
     if isinstance(value, TopicFormat):
         return [value]
     if isinstance(value, list):
-        result = []  # type: List[TopicFormat]
+        result = []
         for item in value:
             if isinstance(item, str):
                 result.append(TopicFormat(item))
@@ -174,25 +334,70 @@ class LocalBrokerConfig:
         )
 
 
+def _parse_eui_ranges(ranges_data: list[Any]) -> list[EUIRange]:
+    """Parse a list of EUI range specifications.
+
+    Args:
+        ranges_data: List of [min, max] pairs.
+
+    Returns:
+        List of EUIRange instances.
+    """
+    result = []
+    for range_spec in ranges_data:
+        if isinstance(range_spec, list) and len(range_spec) == 2:
+            result.append(EUIRange.from_list(range_spec))
+    return result
+
+
+def _parse_eui_masks(masks_data: list[str]) -> list[EUIMask]:
+    """Parse a list of EUI mask specifications.
+
+    Args:
+        masks_data: List of mask pattern strings.
+
+    Returns:
+        List of EUIMask instances.
+    """
+    return [EUIMask.from_string(mask) for mask in masks_data]
+
+
 @dataclass
 class MessageFilterConfig:
     """Configuration for filtering messages by device identifiers.
 
+    Supports three types of filtering for each EUI type:
+    - Exact match lists (whitelist/blacklist)
+    - Range filters with [min, max] pairs
+    - Mask patterns using 'x' as wildcards
+
     Attributes:
         deveui_whitelist: List of DevEUI values to allow (empty = allow all).
         deveui_blacklist: List of DevEUI values to block.
+        deveui_ranges: List of [min, max] EUI ranges to allow.
+        deveui_masks: List of EUI mask patterns to allow (e.g., "00-11-xx-xx-xx-xx-xx-xx").
         joineui_whitelist: List of JoinEUI values to allow (empty = allow all).
         joineui_blacklist: List of JoinEUI values to block.
+        joineui_ranges: List of [min, max] EUI ranges to allow.
+        joineui_masks: List of EUI mask patterns to allow.
         appeui_whitelist: List of AppEUI values to allow (empty = allow all).
         appeui_blacklist: List of AppEUI values to block.
+        appeui_ranges: List of [min, max] EUI ranges to allow.
+        appeui_masks: List of EUI mask patterns to allow.
     """
 
     deveui_whitelist: list[str] = field(default_factory=list)
     deveui_blacklist: list[str] = field(default_factory=list)
+    deveui_ranges: list[EUIRange] = field(default_factory=list)
+    deveui_masks: list[EUIMask] = field(default_factory=list)
     joineui_whitelist: list[str] = field(default_factory=list)
     joineui_blacklist: list[str] = field(default_factory=list)
+    joineui_ranges: list[EUIRange] = field(default_factory=list)
+    joineui_masks: list[EUIMask] = field(default_factory=list)
     appeui_whitelist: list[str] = field(default_factory=list)
     appeui_blacklist: list[str] = field(default_factory=list)
+    appeui_ranges: list[EUIRange] = field(default_factory=list)
+    appeui_masks: list[EUIMask] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MessageFilterConfig:
@@ -207,10 +412,16 @@ class MessageFilterConfig:
         return cls(
             deveui_whitelist=_normalize_eui_list(data.get("deveui_whitelist", [])),
             deveui_blacklist=_normalize_eui_list(data.get("deveui_blacklist", [])),
+            deveui_ranges=_parse_eui_ranges(data.get("deveui_ranges", [])),
+            deveui_masks=_parse_eui_masks(data.get("deveui_masks", [])),
             joineui_whitelist=_normalize_eui_list(data.get("joineui_whitelist", [])),
             joineui_blacklist=_normalize_eui_list(data.get("joineui_blacklist", [])),
+            joineui_ranges=_parse_eui_ranges(data.get("joineui_ranges", [])),
+            joineui_masks=_parse_eui_masks(data.get("joineui_masks", [])),
             appeui_whitelist=_normalize_eui_list(data.get("appeui_whitelist", [])),
             appeui_blacklist=_normalize_eui_list(data.get("appeui_blacklist", [])),
+            appeui_ranges=_parse_eui_ranges(data.get("appeui_ranges", [])),
+            appeui_masks=_parse_eui_masks(data.get("appeui_masks", [])),
         )
 
 
@@ -431,7 +642,7 @@ class BridgeConfig:
         remote_brokers_data = data.get("remote_brokers", [])
         log_data = data.get("log", {})
 
-        remote_brokers = [RemoteBrokerConfig.from_dict(rb) for rb in remote_brokers_data]  # type: List[RemoteBrokerConfig]
+        remote_brokers = [RemoteBrokerConfig.from_dict(rb) for rb in remote_brokers_data]
 
         return cls(
             local_broker=(

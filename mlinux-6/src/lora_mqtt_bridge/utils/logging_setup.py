@@ -2,8 +2,6 @@
 
 This module provides functions for configuring logging
 for the LoRa MQTT Bridge application.
-
-Compatible with Python 3.8+ (mLinux 6.3.5)
 """
 
 from __future__ import annotations
@@ -30,7 +28,7 @@ def setup_logging(config: LogConfig | None = None) -> logging.Logger:
     # Default configuration
     level_str = "INFO"
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    log_file = None  # type: Optional[str]
+    log_file = None
 
     if config:
         level_str = config.level

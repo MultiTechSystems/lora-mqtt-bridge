@@ -2,8 +2,6 @@
 
 This module provides functionality to filter which fields are included
 in forwarded uplink messages.
-
-Compatible with Python 3.8+ (mLinux 6.3.5)
 """
 
 from __future__ import annotations
@@ -35,9 +33,9 @@ class FieldFilter:
             config: The filter configuration containing include/exclude settings.
         """
         self.config = config
-        self._include_fields = set(config.include_fields)  # type: Set[str]
-        self._exclude_fields = set(config.exclude_fields)  # type: Set[str]
-        self._always_include = set(config.always_include)  # type: Set[str]
+        self._include_fields = set(config.include_fields)
+        self._exclude_fields = set(config.exclude_fields)
+        self._always_include = set(config.always_include)
 
     def filter_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Filter a message payload based on configured rules.
@@ -48,7 +46,7 @@ class FieldFilter:
         Returns:
             A filtered payload dictionary.
         """
-        result = {}  # type: Dict[str, Any]
+        result: dict[str, Any] = {}
 
         for key, value in payload.items():
             # Always include required fields
