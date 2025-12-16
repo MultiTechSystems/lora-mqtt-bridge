@@ -97,16 +97,16 @@ def _parse_eui_mask(mask_spec: str) -> tuple[str, str]:
     pattern_chars = []
     mask_chars = []
     for char in normalized:
-        if char == 'x':
-            pattern_chars.append('0')
-            mask_chars.append('0')
-        elif char == '-':
-            pattern_chars.append('-')
-            mask_chars.append('-')
+        if char == "x":
+            pattern_chars.append("0")
+            mask_chars.append("0")
+        elif char == "-":
+            pattern_chars.append("-")
+            mask_chars.append("-")
         else:
             pattern_chars.append(char)
-            mask_chars.append('f')
-    return (''.join(pattern_chars), ''.join(mask_chars))
+            mask_chars.append("f")
+    return ("".join(pattern_chars), "".join(mask_chars))
 
 
 @dataclass

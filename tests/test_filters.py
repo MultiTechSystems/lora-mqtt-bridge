@@ -311,9 +311,7 @@ class TestMessageFilterRanges:
         """Test that DevEUI within range is allowed."""
         config = MessageFilterConfig.from_dict(
             {
-                "deveui_ranges": [
-                    ["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]
-                ],
+                "deveui_ranges": [["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]],
             }
         )
         filter_obj = MessageFilter(config)
@@ -326,9 +324,7 @@ class TestMessageFilterRanges:
         """Test that DevEUI outside range is blocked."""
         config = MessageFilterConfig.from_dict(
             {
-                "deveui_ranges": [
-                    ["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]
-                ],
+                "deveui_ranges": [["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]],
             }
         )
         filter_obj = MessageFilter(config)
@@ -366,9 +362,7 @@ class TestMessageFilterRanges:
         config = MessageFilterConfig.from_dict(
             {
                 "deveui_whitelist": ["aa-bb-cc-dd-ee-ff-00-11"],
-                "deveui_ranges": [
-                    ["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]
-                ],
+                "deveui_ranges": [["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]],
             }
         )
         filter_obj = MessageFilter(config)
@@ -389,9 +383,7 @@ class TestMessageFilterRanges:
         """Test that blacklist blocks even if in range."""
         config = MessageFilterConfig.from_dict(
             {
-                "deveui_ranges": [
-                    ["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]
-                ],
+                "deveui_ranges": [["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]],
                 "deveui_blacklist": ["00-11-22-33-44-55-66-50"],
             }
         )
@@ -431,9 +423,7 @@ class TestMessageFilterRanges:
         """Test dynamically removing a DevEUI range."""
         config = MessageFilterConfig.from_dict(
             {
-                "deveui_ranges": [
-                    ["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]
-                ],
+                "deveui_ranges": [["00-11-22-33-44-55-66-00", "00-11-22-33-44-55-66-ff"]],
             }
         )
         filter_obj = MessageFilter(config)
