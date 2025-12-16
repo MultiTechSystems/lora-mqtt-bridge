@@ -33,10 +33,16 @@
       "message_filter": {
         "deveui_whitelist": [],
         "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": [],
         "joineui_whitelist": [],
         "joineui_blacklist": [],
+        "joineui_ranges": [],
+        "joineui_masks": [],
         "appeui_whitelist": [],
-        "appeui_blacklist": []
+        "appeui_blacklist": [],
+        "appeui_ranges": [],
+        "appeui_masks": []
       },
       "field_filter": {
         "include_fields": [],
@@ -72,7 +78,9 @@
       },
       "message_filter": {
         "deveui_whitelist": [],
-        "deveui_blacklist": []
+        "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": []
       },
       "field_filter": {
         "include_fields": [],
@@ -103,7 +111,9 @@
       },
       "message_filter": {
         "deveui_whitelist": [],
-        "deveui_blacklist": []
+        "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": []
       },
       "field_filter": {
         "include_fields": ["deveui", "time", "port", "data", "fcnt"],

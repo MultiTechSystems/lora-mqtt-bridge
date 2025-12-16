@@ -46,10 +46,16 @@ The LoRa MQTT Bridge can be configured using a JSON configuration file or enviro
       "message_filter": {
         "deveui_whitelist": [],
         "deveui_blacklist": [],
+        "deveui_ranges": [],
+        "deveui_masks": [],
         "joineui_whitelist": [],
         "joineui_blacklist": [],
+        "joineui_ranges": [],
+        "joineui_masks": [],
         "appeui_whitelist": [],
-        "appeui_blacklist": []
+        "appeui_blacklist": [],
+        "appeui_ranges": [],
+        "appeui_masks": []
       },
       "field_filter": {
         "include_fields": [],
@@ -129,6 +135,39 @@ Each remote broker can have the following configuration:
 | downlink_pattern | string | "lora/%s/down" | Downlink topic pattern |
 
 **Note:** The `%(gwuuid)s` variable is automatically populated with the gateway's UUID at runtime.
+
+### Message Filter Configuration
+
+Each EUI type (deveui, joineui, appeui) supports four filter mechanisms:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| {eui}_whitelist | array | [] | Exact EUI values to allow |
+| {eui}_blacklist | array | [] | Exact EUI values to block |
+| {eui}_ranges | array | [] | Array of `[min, max]` EUI range pairs |
+| {eui}_masks | array | [] | Array of mask patterns using `x` as wildcards |
+
+**Filter Precedence:**
+1. Blacklist always blocks (highest priority)
+2. Whitelist, ranges, and masks are combined with OR (any match allows)
+3. If no allow filters defined, all are allowed (subject to blacklist)
+
+**Example with all filter types:**
+
+```json
+{
+  "message_filter": {
+    "deveui_whitelist": ["ff-ff-ff-ff-ff-ff-ff-ff"],
+    "deveui_blacklist": ["00-00-00-00-00-00-00-00"],
+    "deveui_ranges": [
+      ["00-11-22-33-44-55-00-00", "00-11-22-33-44-55-ff-ff"]
+    ],
+    "deveui_masks": ["aa-bb-xx-xx-xx-xx-xx-xx"]
+  }
+}
+```
+
+See the [Filtering Guide](filtering.md) for detailed examples.
 
 ## Environment Variables
 

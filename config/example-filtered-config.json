@@ -38,7 +38,21 @@
         "enabled": true
       },
       "message_filter": {
-        "appeui_whitelist": ["11-22-33-44-55-66-77-88"]
+        "deveui_masks": ["00-11-22-xx-xx-xx-xx-xx"]
+      }
+    },
+    {
+      "name": "batch-devices",
+      "enabled": true,
+      "host": "batch.example.com",
+      "port": 8883,
+      "tls": {
+        "enabled": true
+      },
+      "message_filter": {
+        "deveui_ranges": [
+          ["00-11-22-33-44-55-00-01", "00-11-22-33-44-55-00-64"]
+        ]
       }
     },
     {
@@ -54,6 +68,10 @@
           "00-11-22-33-44-55-66-01",
           "00-11-22-33-44-55-66-02",
           "00-11-22-33-44-55-66-03"
+        ],
+        "deveui_masks": ["aa-bb-xx-xx-xx-xx-xx-xx"],
+        "deveui_ranges": [
+          ["cc-dd-ee-ff-00-00-00-00", "cc-dd-ee-ff-00-00-00-ff"]
         ]
       },
       "field_filter": {
