@@ -13,6 +13,18 @@ alwaysApply: false
 - **No pip**: Don't rely on pip for dependencies - bundle everything or use stdlib
 - Use dataclasses for configuration (no pydantic)
 
+## Type Hint Conversion Table
+
+| Python 3.10+ | Python 3.8 |
+|--------------|------------|
+| `list[str]` | `List[str]` |
+| `dict[str, Any]` | `Dict[str, Any]` |
+| `str \| None` | `Optional[str]` |
+| `int \| str` | `Union[int, str]` |
+| `tuple[int, str]` | `Tuple[int, str]` |
+
+For Python 3.8, add `from __future__ import annotations` at top of files.
+
 ## Gateway File Structure
 
 ```
@@ -23,13 +35,85 @@ alwaysApply: false
 └── {app_name}/              # Python source files
 ```
 
+## Gateway UUID Retrieval
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def get_gateway_uuid() -> str:
+    """Retrieve MultiTech gateway UUID."""
+    # Primary: mts-io sysfs
+    try:
+        with open("/sys/devices/platform/mts-io/uuid") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        pass
+    # Fallback: DMI product UUID
+    try:
+        with open("/sys/class/dmi/id/product_uuid") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        pass
+    # Default
+    return "00000000-0000-0000-0000-000000000000"
+```
+
 ## Status Writer Requirements
 
-- Write to `$APP_DIR/status.json`
+- Write to `$APP_DIR/status.json` (use APP_DIR environment variable)
 - Fields: `pid` (integer), `AppInfo` (string, max 160 chars)
 - Update every 10 seconds in background thread
 - Atomic writes (temp file + rename)
 - Format: `{"pid": 12345, "AppInfo": "Status message @ HH:MM:SS"}`
+
+**Important**: The `pid` field must be an integer (not a string) for app-manager to correctly track the process.
+
+## Syslog Logging Setup
+
+```python
+import logging
+from logging.handlers import SysLogHandler
+
+def setup_syslog_logging(app_name: str, level: str = "INFO") -> logging.Logger:
+    """Configure logging for mLinux syslog."""
+    logger = logging.getLogger(app_name)
+    logger.setLevel(getattr(logging, level.upper()))
+    
+    try:
+        # mLinux syslog
+        handler = SysLogHandler(address="/dev/log")
+        handler.ident = f"{app_name}: "
+    except (FileNotFoundError, OSError):
+        # Fallback for development
+        handler = logging.StreamHandler()
+    
+    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+```
+
+## paho-mqtt Version Compatibility
+
+Handle both paho-mqtt 1.x and 2.x APIs:
+
+```python
+import paho.mqtt.client as mqtt
+
+def create_mqtt_client(client_id: str) -> mqtt.Client:
+    """Create MQTT client compatible with paho-mqtt 1.x and 2.x."""
+    try:
+        # paho-mqtt 2.x
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_id,
+        )
+    except (TypeError, AttributeError):
+        # paho-mqtt 1.x fallback
+        client = mqtt.Client(client_id=client_id)
+    return client
+```
 
 ## API Authentication
 
@@ -154,15 +238,41 @@ curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" 
 
 ```bash
 # Write new config
-cat << 'EOF' | sshpass -p 'yourpassword' ssh admin@{IP} \
+cat << 'CONFIGEOF' | sshpass -p 'yourpassword' ssh admin@{IP} \
   "cat > /var/config/app/{app_name}/config/config.json"
 {
-  "local_broker": {
-    "host": "127.0.0.1",
-    "port": 1883
-  },
-  "remote_brokers": [...]
+  "key": "value"
 }
+CONFIGEOF
+
+# Restart app
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
+sleep 2
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
+```
+
+## Copy Single File Update
+
+```bash
+# Copy single file
+sshpass -p 'yourpassword' scp mlinux-7/src/{app_name}/bridge.py \
+  admin@{IP}:/var/config/app/{app_name}/{app_name}/bridge.py
+
+# Restart
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
+sleep 2
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
+```
+
+## Synchronizing Platform Versions
+
+When updating code, sync changes across all platform versions:
+
+1. Implement in `mlinux-7/src` first (Python 3.10)
+2. Copy to `mlinux-6/src` and adjust type hints for Python 3.8
+3. Copy to `ubuntu/src` (uses Python 3.10+ syntax)
+4. Rebuild tarballs for mlinux-6 and mlinux-7
+5. Run tests on all versions
 
 ## Troubleshooting
 
@@ -181,6 +291,25 @@ If getting "401 not logged in" when trying to stop/start app via API:
 If tar shows "Permission denied" and "Cannot change mode" warnings:
 - These warnings are usually OK - files still extract
 - Verify with `ls -la` or `cat` the file
+
+### App-Manager Lock Issues
+If getting "Failed to acquire lock on file" when using app-manager CLI:
+- Use the web API instead of CLI
+- Or remove stale lock: `rm /var/run/AppManager.lock`
+
+### Configuration Overwritten on Install
+App installation may overwrite custom configuration:
+- After `app_install`, update config via API or SSH
+- Then restart the app
+
+## Important Notes
+
+1. **API Authentication**: Must use cookie-based sessions, not Bearer tokens
+2. **App ID**: Get from `app-manager --command status` output
+3. **Config Overwrites**: App installation may overwrite config - update after install
+4. **Permission Warnings**: tar warnings are usually OK
+5. **Status Format**: `{"pid": int, "AppInfo": "string"}` - pid must be integer
+6. **Always test on actual gateway hardware** - Emulation doesn't catch all issues
 
 ## Quick Reference
 

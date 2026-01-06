@@ -31,6 +31,16 @@ alwaysApply: false
 - Run `ruff format src tests` for formatting
 - Run `mypy src --ignore-missing-imports` for type checking
 
+### Common Ruff Issues
+
+| Code | Issue | Fix |
+|------|-------|-----|
+| F401 | Unused imports | Remove or add to `__all__` |
+| E501 | Line too long | Break into multiple lines |
+| B904 | Use `raise ... from err` | Add `from err` in except blocks |
+| D401 | Docstrings should be imperative | Start with verb (e.g., "Return" not "Returns") |
+| I001 | Import sorting | Run `ruff format` |
+
 ## Project Structure
 
 - Clear project structure with separate directories for source code, tests, docs, and config
@@ -46,7 +56,51 @@ alwaysApply: false
 - Support nested configuration structures
 - Provide default values for optional fields
 
+Example:
+```python
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+@dataclass
+class MyConfig:
+    name: str = ""
+    enabled: bool = True
+    items: List[str] = field(default_factory=list)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "MyConfig":
+        return cls(
+            name=data.get("name", ""),
+            enabled=data.get("enabled", True),
+            items=data.get("items", []),
+        )
+```
+
 ## Error Handling
 
 - Robust error handling and logging, including context capture
 - Use structured logging with syslog for gateway deployments
+
+## CI/CD with GitHub Actions
+
+```yaml
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+      - run: mypy src --ignore-missing-imports
+      - run: pytest tests/ -v --cov=src
+```
