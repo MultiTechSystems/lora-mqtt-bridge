@@ -29,12 +29,22 @@ alwaysApply: false
 - Use Ruff for code style consistency
 - Run `ruff check src tests` before committing
 - Run `ruff format src tests` for formatting
+- Run `mypy src --ignore-missing-imports` for type checking
 
 ## Project Structure
 
 - Clear project structure with separate directories for source code, tests, docs, and config
 - Modular design with distinct files for models, services, controllers, and utilities
 - Create `__init__.py` files in all Python package directories
+
+## Configuration Models
+
+- Use dataclasses for configuration (no pydantic - not available on gateway)
+- Implement `from_dict()` class methods for JSON deserialization
+- No external dependencies beyond stdlib
+- Python 3.8 compatible type hints for mlinux-6
+- Support nested configuration structures
+- Provide default values for optional fields
 
 ## Error Handling
 

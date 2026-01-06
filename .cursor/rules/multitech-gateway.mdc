@@ -34,8 +34,17 @@ alwaysApply: false
 ## API Authentication
 
 - Must use cookie-based sessions, NOT Bearer tokens
-- Login: `curl -k -c cookies.txt -X POST "https://{IP}/api/login" -H "Content-Type: application/json" -d '{"username":"admin","password":"pass"}'`
-- Use cookies: `curl -k -b cookies.txt ...`
+- Login first, then use cookies for subsequent requests
+
+```bash
+# Login and get session cookie
+curl -k -s -c /tmp/cookies.txt -X POST "https://{IP}/api/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"yourpassword"}'
+
+# Use cookies for subsequent requests
+curl -k -s -b /tmp/cookies.txt ...
+```
 
 ## Tarball Build Requirements
 
@@ -61,8 +70,125 @@ ssh admin@{IP} "app-manager --command status"
 ssh admin@{IP} "grep {app} /var/log/messages | tail -50"
 ```
 
+### View status.json
+```bash
+ssh admin@{IP} "cat /var/config/app/{app_name}/status.json"
+```
+
 ### Stop/Start App via API
 ```bash
-curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
-curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
 ```
+
+## Install New Application via API
+
+The `appId` in `app_install` must be numeric (e.g., "1", "14") or hexadecimal with hyphens. App names are not valid.
+
+```bash
+# 1. Login and get session cookie
+curl -k -s -c /tmp/cookies.txt -X POST "https://{IP}/api/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"yourpassword"}'
+
+# 2. Get file size for pre-upload
+FILESIZE=$(stat -c%s {app_name}-{version}-mlinux7.tar.gz)
+
+# 3. Pre-upload notification
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/command/app_pre_upload" \
+  -H "Content-Type: application/json" \
+  -d "{\"info\":{\"fileName\":\"{app_name}-{version}-mlinux7.tar.gz\",\"fileSize\":$FILESIZE}}"
+
+# 4. Upload the tarball
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/command/app_upload" \
+  -F "archivo=@{app_name}-{version}-mlinux7.tar.gz;filename={app_name}-{version}-mlinux7.tar.gz;type=application/x-gzip"
+
+# 5. Install the app
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/command/app_install" \
+  -H "Content-Type: application/json" \
+  -d '{"info":{"appId":"{ID}","appFile":"{app_name}-{version}-mlinux7.tar.gz"}}'
+
+# 6. Start the app
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" \
+  -H "Content-Length: 0"
+```
+
+## Upload and Deploy New Version via SSH
+
+```bash
+# 1. Build tarball
+cd mlinux-7 && bash build-tarball.sh
+
+# 2. Upload tarball
+sshpass -p 'yourpassword' scp mlinux-7/{app_name}-{version}-mlinux7.tar.gz \
+  admin@{IP}:/tmp/
+
+# 3. Stop app
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" \
+  -H "Content-Length: 0"
+
+# 4. Extract tarball (permission warnings are OK)
+sshpass -p 'yourpassword' ssh admin@{IP} \
+  "cd /var/config/app/{app_name} && tar -xzf /tmp/{app_name}-{version}-mlinux7.tar.gz --overwrite"
+
+# 5. Start app
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" \
+  -H "Content-Length: 0"
+```
+
+## Update Configuration via API
+
+```bash
+# Upload config file via API
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/command/app_config_install" \
+  -F "appId={ID}" \
+  -F "appConfigFile=@config.json;filename=config.json;type=application/json"
+
+# Restart app to apply new config
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
+sleep 2
+curl -k -s -b /tmp/cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
+```
+
+## Update Configuration via SSH
+
+```bash
+# Write new config
+cat << 'EOF' | sshpass -p 'yourpassword' ssh admin@{IP} \
+  "cat > /var/config/app/{app_name}/config/config.json"
+{
+  "local_broker": {
+    "host": "127.0.0.1",
+    "port": 1883
+  },
+  "remote_brokers": [...]
+}
+
+## Troubleshooting
+
+### App Won't Start
+If app shows "STARTED" but AppPids is empty and status.json shows "Not started":
+- Check logs: `ssh admin@{IP} "grep {app} /var/log/messages | tail -50"`
+- Verify Python syntax errors
+- Check file permissions
+
+### API Authentication Failed
+If getting "401 not logged in" when trying to stop/start app via API:
+- Use cookie jar (`-c` to save, `-b` to use) instead of Bearer token
+- Ensure login succeeded before subsequent calls
+
+### Permission Denied on Extract
+If tar shows "Permission denied" and "Cannot change mode" warnings:
+- These warnings are usually OK - files still extract
+- Verify with `ls -la` or `cat` the file
+
+## Quick Reference
+
+| Action | Command |
+|--------|---------|
+| Check app status | `ssh admin@{IP} "app-manager --command status"` |
+| View status.json | `ssh admin@{IP} "cat /var/config/app/{app}/status.json"` |
+| View logs | `ssh admin@{IP} "grep {app} /var/log/messages \| tail -50"` |
+| API login | `curl -k -c cookies.txt -X POST "https://{IP}/api/login" -H "Content-Type: application/json" -d '{"username":"admin","password":"pass"}'` |
+| Stop app | `curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"` |
+| Start app | `curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"` |
