@@ -104,3 +104,18 @@ jobs:
       - run: mypy src --ignore-missing-imports
       - run: pytest tests/ -v --cov=src
 ```
+
+## Security - Sensitive Information
+
+**NEVER commit personal or session-specific information to the repository:**
+
+- Gateway IP addresses from user's session context
+- Usernames and passwords from user's session context  
+- API keys, tokens, or credentials
+- Personal file paths or hostnames
+
+In documentation and examples, use generic placeholders:
+- `{IP}` or `192.168.1.100` for IP addresses
+- `{username}` or `admin` for usernames
+- `{password}` or `yourpassword` for passwords
+- `{app_name}`, `{version}`, `{ID}` for variable values
