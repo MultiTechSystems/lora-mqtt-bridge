@@ -1,0 +1,42 @@
+---
+description: Python coding standards and best practices for this project
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+# Python Coding Standards
+
+## Type Annotations
+
+- ALWAYS add typing annotations to each function or class
+- Include return types when necessary
+- Use `List`, `Dict`, `Optional` from typing for Python 3.8 compatibility (mLinux 6)
+- Can use `list`, `dict`, `|` for Python 3.10+ only (mLinux 7, Ubuntu)
+
+## Docstrings
+
+- Add descriptive docstrings to all Python functions and classes
+- Use PEP 257 convention for docstring formatting
+- Update existing docstrings if needed
+
+## Comments
+
+- Keep any comments that exist in a file
+- Do not remove existing comments when making changes
+
+## Code Style
+
+- Use Ruff for code style consistency
+- Run `ruff check src tests` before committing
+- Run `ruff format src tests` for formatting
+
+## Project Structure
+
+- Clear project structure with separate directories for source code, tests, docs, and config
+- Modular design with distinct files for models, services, controllers, and utilities
+- Create `__init__.py` files in all Python package directories
+
+## Error Handling
+
+- Robust error handling and logging, including context capture
+- Use structured logging with syslog for gateway deployments

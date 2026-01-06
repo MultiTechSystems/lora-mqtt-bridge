@@ -1,0 +1,47 @@
+---
+description: LoRa MQTT Bridge application specifics
+globs: ["**/lora_mqtt_bridge/**", "**/config/*.json"]
+alwaysApply: false
+---
+
+# LoRa MQTT Bridge Application
+
+## Purpose
+
+Bridge MQTT messages from a local broker to several remote MQTT brokers for LoRaWAN gateways.
+
+## Local Broker Topics
+
+### Subscriptions (from LNS)
+- `lora/+/+/up` - Uplink messages (lora format)
+- `scada/+/up` - Uplink messages (scada format)
+- `lora/+/+/moved` - Device moved notifications
+- `lora/+/joined` - Device join notifications
+
+### Publications (to LNS)
+- `lora/%s/down` - Downlink messages (lora format, %s = deveui)
+- `scada/%s/down` - Downlink messages (scada format, %s = deveui)
+- `lora/%s/clear` - Clear queue messages
+
+## Configuration Options
+
+- Select between `lora/+/+/up` or `scada/+/up` for uplinks
+- Select between `lora/%s/down` or `scada/%s/down` for downlinks
+- Filter fields in uplink messages
+- Filter uplinks to each remote broker based on DevEUI, JoinEUI, or AppEUI
+
+## Reference Documentation
+
+- MultiTech LoRaWAN App Connect: https://multitechsystems.github.io/lorawan-app-connect-mqtt-v1_1
+
+## Project Structure
+
+```
+├── mlinux-6/     # mLinux 6 (Python 3.8) deployment
+├── mlinux-7/     # mLinux 7 (Python 3.10) deployment
+├── ubuntu/       # Ubuntu development/testing
+├── src/          # Main source code
+├── tests/        # Test files
+├── config/       # Example configurations
+└── docs/         # Documentation
+```

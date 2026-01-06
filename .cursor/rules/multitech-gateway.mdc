@@ -1,0 +1,68 @@
+---
+description: MultiTech Conduit gateway development and deployment guidelines
+globs: ["**/mlinux-6/**", "**/mlinux-7/**", "**/build-tarball.sh"]
+alwaysApply: false
+---
+
+# MultiTech Conduit Gateway Development
+
+## Platform Requirements
+
+- **mLinux 6**: Python 3.8 - use `List`, `Dict`, `Optional` type hints
+- **mLinux 7**: Python 3.10 - can use `list`, `dict`, `|` type hints
+- **No pip**: Don't rely on pip for dependencies - bundle everything or use stdlib
+- Use dataclasses for configuration (no pydantic)
+
+## Gateway File Structure
+
+```
+/var/config/app/{app_name}/
+├── config/
+│   └── config.json          # App configuration
+├── status.json              # Status for app-manager
+└── {app_name}/              # Python source files
+```
+
+## Status Writer Requirements
+
+- Write to `$APP_DIR/status.json`
+- Fields: `pid` (integer), `AppInfo` (string, max 160 chars)
+- Update every 10 seconds in background thread
+- Atomic writes (temp file + rename)
+- Format: `{"pid": 12345, "AppInfo": "Status message @ HH:MM:SS"}`
+
+## API Authentication
+
+- Must use cookie-based sessions, NOT Bearer tokens
+- Login: `curl -k -c cookies.txt -X POST "https://{IP}/api/login" -H "Content-Type: application/json" -d '{"username":"admin","password":"pass"}'`
+- Use cookies: `curl -k -b cookies.txt ...`
+
+## Tarball Build Requirements
+
+Include in tarball:
+- manifest.json
+- Install
+- Start
+- status.json
+- config/
+- src/
+
+Output format: `{app_name}-{version}-mlinux{6|7}.tar.gz`
+
+## Deployment Commands
+
+### Check Status
+```bash
+ssh admin@{IP} "app-manager --command status"
+```
+
+### View Logs
+```bash
+ssh admin@{IP} "grep {app} /var/log/messages | tail -50"
+```
+
+### Stop/Start App via API
+```bash
+curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/stop" -H "Content-Length: 0"
+curl -k -b cookies.txt -X POST "https://{IP}/api/customApps/{ID}/start" -H "Content-Length: 0"
+```

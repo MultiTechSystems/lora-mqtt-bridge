@@ -1,0 +1,39 @@
+---
+description: Testing standards and pytest configuration
+globs: ["**/tests/**/*.py", "**/test_*.py"]
+alwaysApply: false
+---
+
+# Testing Standards
+
+## Test Framework
+
+- ONLY use pytest or pytest plugins
+- Do NOT use the unittest module
+- All tests should be in `./tests` directory
+
+## Type Annotations
+
+- All tests should have typing annotations
+- All tests should be fully annotated and contain docstrings
+
+## Required Imports
+
+When using TYPE_CHECKING, import the following:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from _pytest.capture import CaptureFixture
+    from _pytest.fixtures import FixtureRequest
+    from _pytest.logging import LogCaptureFixture
+    from _pytest.monkeypatch import MonkeyPatch
+    from pytest_mock.plugin import MockerFixture
+```
+
+## Test Organization
+
+- Create all necessary files and folders
+- Create `__init__.py` files in test directories
+- Run tests with `pytest tests/`
